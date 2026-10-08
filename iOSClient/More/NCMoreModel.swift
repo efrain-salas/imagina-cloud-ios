@@ -139,6 +139,9 @@ final class NCMoreModel: ObservableObject {
         /// Opens the SwiftUI settings screen.
         case settings
 
+        /// Imagina (IMAGINA.md): an action of Imagina's own code.
+        case imagina(@MainActor () -> Void)
+
         /// No-op destination.
         case none
     }
@@ -298,6 +301,11 @@ final class NCMoreModel: ObservableObject {
             )
         )
 
+        // Imagina (IMAGINA.md): «Configurar el correo de este iPhone».
+        if let mailSetup = ImaginaMailSetup.menuItem(presentingFrom: controller) {
+            settingsItems.append(Item(titleKey: mailSetup.title, image: mailSetup.image, destination: .imagina(mailSetup.action)))
+        }
+
         settingsItems.append(
             Item(
                 titleKey: "_settings_",
@@ -360,6 +368,9 @@ final class NCMoreModel: ObservableObject {
 
         case .settings:
             openSettings()
+
+        case let .imagina(action):
+            action()
 
         case .none:
             break

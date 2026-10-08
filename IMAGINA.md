@@ -1,6 +1,6 @@
 # Imagina Cloud para iPhone
 
-Versión de la [app de Nextcloud para iOS](https://github.com/nextcloud/ios) con la marca de Imagina, fija a la nube de Imagina y con un único acceso: **«Entrar con Imagina»** (móvil y código SMS en una hoja del navegador que se cierra sola). Forma parte del Cloud de Imagina: `docs/PLAN_CLOUD.md` en el repositorio de Imagina (hito C11.2; prototipo en C0.12). La versión de Android es `imagina-cloud-android`, con el mismo principio.
+Versión de la [app de Nextcloud para iOS](https://github.com/nextcloud/ios) con la marca de Imagina, fija a la nube de Imagina y con un único acceso: **«Entrar con Imagina»** (móvil y código SMS en una hoja del navegador que se cierra sola). Desde su «Menú», **«Configurar el correo»** pone los buzones de Imagina en la app Mail del iPhone con un perfil de configuración. Forma parte del Cloud de Imagina: `docs/PLAN_CLOUD.md` en el repositorio de Imagina (hito C11.2; prototipo en C0.12). La versión de Android es `imagina-cloud-android`, con el mismo principio.
 
 - **Versión de Nextcloud**: `35.1.0` (`NEXTCLOUD_IOS_TAG`), el remoto `upstream`.
 - **Licencia**: GPL v3 (la de la app de Nextcloud para iOS). El código de esta versión tiene que estar publicado (`IMAGINA_SOURCE_CODE_URL`, que la app enseña en Ajustes).
@@ -51,7 +51,7 @@ xcrun devicectl device install app --device <UDID> \
 | `IMAGINA_PRIVACY_URL`, `IMAGINA_APP_STORE_URL`, `IMAGINA_SOURCE_CODE_URL` | Enlaces de Ajustes. |
 | `IMAGINA_ACCENT` | Color del tema (el acento de Imagina); el tema del servidor puede sustituirlo. |
 
-`imagina/imagina.local.properties` (fuera de git) sobrescribe o añade claves en cada máquina. Hoy lleva el usuario y la contraseña de aplicación de Nextcloud de prueba (`IMAGINA_TEST_NC_USER`, `IMAGINA_TEST_NC_APP_PASSWORD`) que la app recibe hasta que exista la API de dispositivos de Imagina (C7.1).
+`imagina/imagina.local.properties` (fuera de git) sobrescribe o añade claves en cada máquina. Hoy lleva lo que la app recibirá de la API de dispositivos de Imagina (C7.1 y C7.2) cuando exista: el usuario y la contraseña de aplicación de Nextcloud de prueba (`IMAGINA_TEST_NC_USER`, `IMAGINA_TEST_NC_APP_PASSWORD`) y el enlace a un perfil de correo de prueba (`IMAGINA_TEST_MAIL_PROFILE_URL`; sin él, «Configurar el correo» no aparece).
 
 ## Cambios en ficheros de Nextcloud (los escribe el script)
 
@@ -65,6 +65,7 @@ xcrun devicectl device install app --device <UDID> \
 | `Brand/NCBrand.swift` | Opciones de marca: nombre, agente de usuario, aviso de «no es la oficial», nube fija, enlaces, grupos, sin introducción, una sola cuenta, sin informes de fallos ni perfiles de Nextcloud, color. | Lo que Nextcloud deja cambiar a las versiones con otra marca. |
 | `Brand/LaunchScreen.storyboard` | Fondo con el acento de Imagina. | Pantalla de carga. |
 | `iOSClient/NCGlobal.swift` | Esquema de la app y de las acciones de los widgets. | Que los enlaces no abran la app oficial. |
+| `iOSClient/More/NCMoreModel.swift` | Tres enganches marcados «Imagina (IMAGINA.md)»: un destino `imagina` para las acciones de Imagina, su caso en `perform` y la fila «Configurar el correo» encima de «Configuración». Sin enlace a un perfil, la fila no aparece. | Que el correo del iPhone se configure desde la app. |
 | `iOSClient/Login/NCLogin.swift` | Un enganche al final de `viewDidLoad`, marcado «Imagina (IMAGINA.md)»: pone «Entrar con Imagina» en lugar de la dirección del servidor. Inactivo si `IMAGINA_AUTH_HOST` está vacío. | El acceso de Nextcloud enseña sus páginas y pide autorizar dos veces. |
 | `iOSClient/Supporting Files/*.lproj/Localizable.strings` | El texto que nombra la app en Ajustes del iPhone (`_access_photo_not_enabled_msg_`) dice `IMAGINA_APP_NAME`. | Los demás textos con «Nextcloud» hablan del servidor o usan ya el nombre de marca. |
 | `AppIcon.icon`, `Brand/Custom.xcassets/AppIcon.appiconset`, `Brand/Custom.xcassets/logo.imageset` | Icono y logo de Imagina Cloud (ver abajo). | Marca. |
@@ -75,6 +76,7 @@ xcrun devicectl device install app --device <UDID> \
 | --- | --- |
 | `imagina/apply-branding.py` | Aplica todo lo anterior desde la versión de Nextcloud de `NEXTCLOUD_IOS_TAG`. |
 | `imagina/Sources/ImaginaSignIn.swift` | «Entrar con Imagina»: OAuth con PKCE contra Imagina en una `ASWebAuthenticationSession` efímera (sin el aviso «quiere usar … para iniciar sesión») que vuelve por `<id>://oauth2redirect`, y las credenciales de Nextcloud del dispositivo. |
+| `imagina/Sources/ImaginaMailSetup.swift` | «Configurar el correo»: explica los pasos que quedan en Ajustes (Permitir, Perfil descargado, Instalar) y abre el enlace del perfil en Safari, que es el único que puede instalarlo. |
 | `imagina/Sources/ImaginaBrand.swift` | Colores del manual de marca y textos de las pantallas de Imagina (español de España, tuteo; inglés en los demás idiomas). |
 | `imagina/Sources/ImaginaParameters.swift` | Generado por el script con los parámetros; fuera de git. |
 | `imagina/brand/` | Fuentes de las imágenes de marca. |
@@ -95,12 +97,12 @@ sips -s format png -z 1024 1024 /tmp/imagina-cloud-icon-square.svg.png --out ima
 2. Cambiar `NEXTCLOUD_IOS_TAG` en `imagina/imagina.properties`.
 3. `python3 -I imagina/apply-branding.py`. Si se para, Nextcloud cambió el trozo que el script busca: revisar el cambio en Nextcloud y ajustar el script.
 4. Revisar opciones de marca nuevas: `git diff <anterior> <nueva> -- Brand/NCBrand.swift`, y extensiones o grupos de app nuevos: `git diff <anterior> <nueva> -- Brand/ Nextcloud.xcodeproj/project.pbxproj | grep -i 'twsweb\|group\.'`.
-5. Compilar e instalar en un iPhone y probar: «Entrar con Imagina» (la hoja se cierra sola), lista de ficheros, subir una foto, la app en Archivos, y que no se vea «Nextcloud» en ninguna pantalla.
+5. Compilar e instalar en un iPhone y probar: «Entrar con Imagina» (la hoja se cierra sola), lista de ficheros, subir una foto, la app en Archivos, «Menú › Configurar el correo» hasta «Perfil instalado», y que no se vea «Nextcloud» en ninguna pantalla.
 
 ## Pendiente para la app de verdad
 
 - Credenciales desde la API de dispositivos de Imagina (C7.1) en lugar de las de prueba; sin pantalla de autorización de Imagina (C3.1).
 - Si la contraseña de aplicación deja de valer, Nextcloud vuelve a su propio acceso: llevarlo a «Entrar con Imagina».
-- «Configurar el correo de este iPhone»: instalar el perfil de correo que da Imagina (C7.2).
+- «Configurar el correo»: pedir a la API de dispositivos un enlace de un solo uso a un perfil firmado con todos los buzones de la persona (C7.2), en lugar del enlace de prueba; sin firma, iOS añade el aviso «Perfil sin firmar». Ofrecerlo también justo después de «Entrar con Imagina».
 - Notificaciones (C11.5): servidor de notificaciones de Imagina (`IMAGINA_PUSH_SERVER_URL`) con la clave de APNs de Imagina.
 - Firma de distribución, ficha del App Store, `ITSEncryptionExportComplianceCode` propio (el de `iOSClient.plist` es de Nextcloud) y aviso de «no es la app oficial» en la ficha.
