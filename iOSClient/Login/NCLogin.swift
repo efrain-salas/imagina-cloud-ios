@@ -176,6 +176,13 @@ class NCLogin: UIViewController, UITextFieldDelegate, NCLoginQRCodeDelegate {
         }
 
         NCNetworking.shared.certificateDelegate = self
+
+        // Imagina (IMAGINA.md): «Entrar con Imagina» in place of the server address.
+        if ImaginaSignIn.isEnabled {
+            ImaginaSignIn.install(on: self, hiding: [baseUrlTextField, loginButton, loginAddressDetail, qrCode, certificate, enforceServersButton, enforceServersDropdownImage]) { [weak self] credentials in
+                await self?.createAccount(urlBase: credentials.server, user: credentials.user, password: credentials.appPassword)
+            }
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {

@@ -34,7 +34,7 @@ final class NCGlobal: Sendable {
     // App
     //
     let appName                                     = "files"
-    let appScheme                                   = "nextcloud"
+    let appScheme                                   = "imaginacloud"
     let talkName                                    = "talk-message"
     let spreedName                                  = "spreed"
     let twoFactorNotificatioName                    = "twofactor_nextcloud_notification"
@@ -314,11 +314,11 @@ final class NCGlobal: Sendable {
 
     // WIDGET ACTION
     //
-    let widgetActionNoAction                                    = "nextcloud://open-action?action=no-action"
-    let widgetActionUploadAsset                                 = "nextcloud://open-action?action=upload-asset"
-    let widgetActionScanDocument                                = "nextcloud://open-action?action=add-scan-document"
-    let widgetActionTextDocument                                = "nextcloud://open-action?action=create-text-document"
-    let widgetActionVoiceMemo                                   = "nextcloud://open-action?action=create-voice-memo"
+    let widgetActionNoAction                                    = "imaginacloud://open-action?action=no-action"
+    let widgetActionUploadAsset                                 = "imaginacloud://open-action?action=upload-asset"
+    let widgetActionScanDocument                                = "imaginacloud://open-action?action=add-scan-document"
+    let widgetActionTextDocument                                = "imaginacloud://open-action?action=create-text-document"
+    let widgetActionVoiceMemo                                   = "imaginacloud://open-action?action=create-voice-memo"
 
     // APPCONFIG
     //

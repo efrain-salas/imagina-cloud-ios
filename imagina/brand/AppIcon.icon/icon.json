@@ -1,0 +1,33 @@
+{
+  "fill" : {
+    "solid" : "srgb:0.10196,0.10588,0.14510,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "imagina-cloud-glyph.svg",
+          "name" : "imagina-cloud-glyph",
+          "position" : {
+            "scale" : 16,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "none",
+        "opacity" : 0
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}

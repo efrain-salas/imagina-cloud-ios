@@ -286,7 +286,7 @@
 "_today_"                                   = "Today";
 "_yesterday_"                               = "Yesterday";
 "_access_photo_not_enabled_"                = "Access to Photos is not enabled";
-"_access_photo_not_enabled_msg_"            = "Please go to Settings → Apps → Nextcloud → Photos and enable Photo Library Access";
+"_access_photo_not_enabled_msg_"            = "Please go to Settings → Apps → Imagina Cloud → Photos and enable Photo Library Access";
 "_access_background_app_refresh_denied_"    = "\"Background App Refresh\" is denied. Please enable it in \"Settings\" otherwise, new photos or videos will not be detected when the application is in the background";
 "_tutorial_photo_view_"                     = "No photos or videos uploaded yet";
 "_error_createsubfolders_upload_"           = "Error creating subfolders";

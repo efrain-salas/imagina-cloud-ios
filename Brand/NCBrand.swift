@@ -61,19 +61,19 @@ struct NextcloudVersion: Comparable {
 final class NCBrandOptions: @unchecked Sendable {
     static let shared = NCBrandOptions()
 
-    var brand: String = "Nextcloud"
-    var brandUserAgent: String = ""
-    var textCopyrightNextcloudiOS: String = "Nextcloud Matheria for iOS %@ © 2026"
+    var brand: String = "Imagina Cloud"
+    var brandUserAgent: String = "Imagina"
+    var textCopyrightNextcloudiOS: String = "Imagina Cloud for iOS %@, based on Nextcloud (not the official app)"
     var textCopyrightNextcloudServer: String = "Nextcloud Server %@"
-    var loginBaseUrl: String = ""
+    var loginBaseUrl: String = "https://cloud-test.imagina.build"
     var pushNotificationServerProxy: String = ""
-    var linkLoginHost: String = "https://nextcloud.com/install"
-    var linkloginPreferredProviders: String = "https://nextcloud.com/signup-ios"
+    var linkLoginHost: String = "https://cloud-test.imagina.build"
+    var linkloginPreferredProviders: String = "https://cloud-test.imagina.build"
     var webLoginAutenticationProtocol: String = "nc://"                                        // example "abc://"
-    var privacy: String = "https://nextcloud.com/privacy"
-    var sourceCode: String = "https://github.com/nextcloud/ios"
+    var privacy: String = "https://imagina.build"
+    var sourceCode: String = "https://github.com/efrain-salas/imagina-cloud-ios"
     var mobileconfig: String = "/remote.php/dav/provisioning/apple-provisioning.mobileconfig"
-    var appStoreUrl: String = "https://apps.apple.com/in/app/nextcloud/id1125420102"
+    var appStoreUrl: String = "https://imagina.build"
 
     var doNotAskPasscodeAtStartup: Bool = false
 
@@ -81,8 +81,8 @@ final class NCBrandOptions: @unchecked Sendable {
     var folderDefaultAutoUpload: String = "Photos"
 
     // Capabilities Group
-    var capabilitiesGroup: String = "group.it.twsweb.Crypto-Cloud"
-    var capabilitiesGroupApps: String = "group.com.nextcloud.apps"
+    var capabilitiesGroup: String = "group.build.imagina.cloud"
+    var capabilitiesGroupApps: String = "group.build.imagina.cloud.apps"
 
     // BRAND ONLY
     var use_AppConfig: Bool = false
@@ -91,15 +91,15 @@ final class NCBrandOptions: @unchecked Sendable {
     var use_themingColor: Bool = true
 
     // MDM settings
-    var disable_intro: Bool = false
-    var disable_request_login_url: Bool = false
-    var disable_multiaccount: Bool = false
+    var disable_intro: Bool = true
+    var disable_request_login_url: Bool = true
+    var disable_multiaccount: Bool = true
     var disable_more_external_site: Bool = false
     var disable_openin_file: Bool = false
-    var disable_crash_service: Bool = false
+    var disable_crash_service: Bool = true
     var disable_log: Bool = false
-    var disable_mobileconfig: Bool = false  
-    var disable_show_more_nextcloud_apps_in_settings: Bool = false
+    var disable_mobileconfig: Bool = true
+    var disable_show_more_nextcloud_apps_in_settings: Bool = true
     var disable_source_code_in_settings: Bool = false
     var enforce_passcode_lock = false
     var enforce_privacyScreenEnabled = false
@@ -178,7 +178,7 @@ final class NCBrandColor: @unchecked Sendable {
     static let shared = NCBrandColor()
 
     // This is rewrited from customet theme, default is Nextcloud color
-    let customer: UIColor = UIColor(red: 0.0 / 255.0, green: 130.0 / 255.0, blue: 201.0 / 255.0, alpha: 1.0) // Nextcloud default: #0082C9
+    let customer: UIColor = UIColor(red: 15.0 / 255.0, green: 118.0 / 255.0, blue: 110.0 / 255.0, alpha: 1.0) // Imagina accent: #0F766E
     var customerText: UIColor = .white
 
     // INTERNAL DEFINE COLORS
