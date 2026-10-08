@@ -127,7 +127,7 @@ def brand_project() -> None:
     # Nextcloud's project copies its Firebase file (kept out of git) into the app: a placeholder, never used.
     firebase = ROOT / "GoogleService-Info.plist"
     if not firebase.exists():
-        shutil.copyfile(IMAGINA / "GoogleService-Info.plist", firebase)
+        shutil.copyfile(IMAGINA / "GoogleService-Info.placeholder.plist", firebase)
 
     # Shared schemes name the extensions' bundle identifiers.
     for scheme in ("Share", "File Provider Extension", "BackgroundUploadExtension"):

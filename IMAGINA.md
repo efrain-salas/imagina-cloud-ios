@@ -78,7 +78,7 @@ xcrun devicectl device install app --device <UDID> \
 | `imagina/Sources/ImaginaBrand.swift` | Colores del manual de marca y textos de las pantallas de Imagina (español de España, tuteo; inglés en los demás idiomas). |
 | `imagina/Sources/ImaginaParameters.swift` | Generado por el script con los parámetros; fuera de git. |
 | `imagina/brand/` | Fuentes de las imágenes de marca. |
-| `imagina/GoogleService-Info.plist` | Sustituto del fichero de Firebase que Nextcloud deja fuera de git y su proyecto copia en la app; el script lo pone en la raíz si no hay otro. Nunca se usa: la app no manda informes de fallos. |
+| `imagina/GoogleService-Info.placeholder.plist` | Sustituto del fichero de Firebase que Nextcloud deja fuera de git y su proyecto copia en la app; el script lo pone en la raíz si no hay otro. Nunca se usa: la app no manda informes de fallos. |
 
 ## Imágenes de marca
 
