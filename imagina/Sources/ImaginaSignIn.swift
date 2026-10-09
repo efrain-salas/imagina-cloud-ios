@@ -95,6 +95,8 @@ final class ImaginaSignIn: NSObject {
             }
             let credentials = try await ImaginaDevice.connect()
             await onSignedIn(credentials)
+            // The notices of new mail (C12.6) need the permission for alerts; the token is already on its way to Imagina.
+            ImaginaPush.requestPermissionIfUndecided()
             Task { await ImaginaMailSetup.offerAfterSignIn() }
         } catch {
             let failure = error as? ImaginaFailure ?? .unexpected

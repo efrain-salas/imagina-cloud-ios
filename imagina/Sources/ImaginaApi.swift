@@ -107,7 +107,7 @@ enum ImaginaHTTP {
 
     // MARK: Devices API
 
-    /// A request to `/api/v1/cloud/devices` + `path` (empty, or `/{id}`, or `/{id}/mail-profile`).
+    /// A request to `/api/v1/cloud/devices` + `path` (empty, or `/{id}`, or `/{id}/mail-profile`, or `/{id}/push`).
     static func devicesRequest(_ method: String, path: String, body: [String: Any]? = nil, token: String) throws -> URLRequest {
         guard let url = URL(string: "\(authBase)/api/v1/cloud/devices\(path)") else { throw ImaginaFailure.unexpected }
 
@@ -128,7 +128,8 @@ enum ImaginaHTTP {
     }
 
     /// Disconnects a device with the session it was stored in, once that session has been wiped from the Keychain
-    /// (the person removed the account). Best effort: nothing is reported.
+    /// (the person removed the account). Best effort: nothing is reported. Imagina is told to forget the push token
+    /// first, so no notice of new mail is sent to an iPhone that no longer has the account.
     static func disconnect(using session: ImaginaSession) async {
         guard let deviceId = session.deviceId else { return }
 
@@ -136,7 +137,12 @@ enum ImaginaHTTP {
         if token == nil, let refreshToken = session.refreshToken {
             token = try? await requestTokens(refreshFields(refreshToken), rejection: .needsSignIn).accessToken
         }
-        guard let token, let request = try? devicesRequest("DELETE", path: devicePath(deviceId), token: token) else { return }
+        guard let token else { return }
+
+        if let request = try? devicesRequest("DELETE", path: devicePath(deviceId, "/push"), token: token) {
+            _ = try? await send(request)
+        }
+        guard let request = try? devicesRequest("DELETE", path: devicePath(deviceId), token: token) else { return }
         _ = try? await send(request)
     }
 
@@ -272,6 +278,13 @@ actor ImaginaApi {
             throw ImaginaFailure.unexpected
         }
         return url
+    }
+
+    /// Gives Imagina this device's APNs token (hex), so it can send the notices of new mail to this iPhone. A device
+    /// Imagina has disconnected answers 410 (`revoked`).
+    func registerPushToken(_ token: String, for deviceId: String) async throws {
+        let response = try await send("PUT", path: ImaginaHTTP.devicePath(deviceId, "/push"), body: ["token": token])
+        guard response.status == 204 else { throw Self.failure(response) }
     }
 
     /// Disconnects a device. One that Imagina does not have any more is as good as disconnected.

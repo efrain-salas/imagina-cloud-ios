@@ -165,6 +165,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        // Imagina (IMAGINA.md): a tap on a notice of new mail opens that message in Mail.
+        if ImaginaMailNotice.handle(response) {
+            completionHandler()
+            return
+        }
+
         if let pref = UserDefaults(suiteName: NCBrandOptions.shared.capabilitiesGroup),
            let data = pref.object(forKey: "NOTIFICATION_DATA") as? [String: AnyObject] {
             nextcloudPushNotificationAction(data: data)
@@ -175,6 +181,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        // Imagina (IMAGINA.md): the token also goes to Imagina, for the notices of new mail.
+        ImaginaPush.tokenArrived(deviceToken)
+
         guard !isXcodeRunningForPreviews,
               application.applicationState != .background else {
             return

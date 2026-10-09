@@ -15,6 +15,7 @@ enum ImaginaDevice {
             ImaginaStore.update { session in
                 session.deviceId = nil
                 session.mailProfile = .notInstalled
+                session.pushRegistration = nil
             }
             try? await ImaginaApi.shared.deleteDevice(previous)
         }
@@ -24,7 +25,11 @@ enum ImaginaDevice {
         ImaginaStore.update { session in
             session.deviceId = created.deviceId
             session.mailProfile = .notInstalled
+            session.pushRegistration = nil
         }
+        // The notices of new mail need this iPhone's push token in Imagina (the token is already known: the app asks for
+        // it every time it starts).
+        ImaginaPush.deviceConnected()
         return created.credentials
     }
 
@@ -43,6 +48,7 @@ enum ImaginaDevice {
         ImaginaStore.update { session in
             session.deviceId = nil
             session.mailProfile = .notInstalled
+            session.pushRegistration = nil
         }
     }
 }

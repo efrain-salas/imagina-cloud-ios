@@ -318,6 +318,40 @@ def hook_account_removal() -> None:
     write(path, text)
 
 
+def hook_push_notifications() -> None:
+    """The notices of new mail (imagina/Sources/ImaginaPush.swift and ImaginaMailNotice.swift, C12.6): the app's APNs token
+    also goes to Imagina's devices API, and a tap on Imagina's notice opens the message in Mail before Nextcloud looks at
+    the response. Nextcloud's own notifications are not touched."""
+    path = "iOSClient/AppDelegate.swift"
+    text = upstream(path).decode()
+
+    anchor = "    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {\n"
+    text = replace(
+        text,
+        anchor,
+        anchor
+        + "        // Imagina (IMAGINA.md): the token also goes to Imagina, for the notices of new mail.\n"
+        + "        ImaginaPush.tokenArrived(deviceToken)\n"
+        + "\n",
+        path,
+    )
+
+    anchor = "    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {\n"
+    text = replace(
+        text,
+        anchor,
+        anchor
+        + "        // Imagina (IMAGINA.md): a tap on a notice of new mail opens that message in Mail.\n"
+        + "        if ImaginaMailNotice.handle(response) {\n"
+        + "            completionHandler()\n"
+        + "            return\n"
+        + "        }\n"
+        + "\n",
+        path,
+    )
+    write(path, text)
+
+
 def brand_notifications() -> None:
     """The notification service extension names the app, not Nextcloud, when it cannot read a notification."""
     path = "Notification Service Extension/NotificationService.swift"
@@ -385,6 +419,7 @@ def main() -> int:
         hook_login()
         hook_menu()
         hook_account_removal()
+        hook_push_notifications()
         brand_notifications()
         write_parameters()
         brand_images()

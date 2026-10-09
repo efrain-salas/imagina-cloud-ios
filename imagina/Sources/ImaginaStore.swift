@@ -11,6 +11,13 @@ enum ImaginaMailProfileState: String, Codable {
     case changed
 }
 
+/// The APNs token Imagina already has for a device, so the app does not send it again until the token or the device
+/// changes (docs/PLAN_CLOUD.md, C12.6).
+struct ImaginaPushRegistration: Codable, Equatable {
+    let deviceId: String
+    let token: String
+}
+
 /// What the app keeps about this iPhone's connection to Imagina: the device Imagina created for it (its mail profile
 /// and its disconnection are asked for with that id) and the OAuth tokens that authorize those requests.
 struct ImaginaSession: Codable, Equatable {
@@ -19,6 +26,8 @@ struct ImaginaSession: Codable, Equatable {
     var accessTokenExpiresAt: Date?
     var refreshToken: String?
     var mailProfile: ImaginaMailProfileState = .notInstalled
+    /// The push token Imagina has for this device, for the notices of new mail.
+    var pushRegistration: ImaginaPushRegistration?
 
     /// An access token that is still good for at least a minute.
     var usableAccessToken: String? {
