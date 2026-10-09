@@ -168,6 +168,12 @@ def brand_entitlements_and_plists() -> None:
     text = replace(text, "<string>Nextcloud Assistant</string>", f"<string>{APP_NAME} Assistant</string>", path)
     write(path, text)
 
+    # Nextcloud's demo cloud as the base URL of the background upload extension: no reference to it is left.
+    path = "Brand/BackgroundUploadExtension.plist"
+    text = upstream(path).decode()
+    text = replace(text, "<string>https://cloud.nextcloud.com</string>", f"<string>{P['IMAGINA_CLOUD_URL']}</string>", path)
+    write(path, text)
+
 
 # ---------------------------------------------------------------------------------------------------
 # Brand options (what Nextcloud lets a branded client change)
@@ -176,16 +182,27 @@ def brand_options() -> None:
     path = "Brand/NCBrand.swift"
     text = upstream(path).decode()
     cloud = P["IMAGINA_CLOUD_URL"]
+    if not cloud.startswith("https://"):
+        raise BrandingError(f"IMAGINA_CLOUD_URL must be an https URL, not {cloud!r}")
+    # Imagina's push server (C7.10/C11.5) speaks Nextcloud's push proxy protocol; the app registers its APNs token there
+    # through the Nextcloud server. Empty: no notifications.
+    push = P.get("IMAGINA_PUSH_SERVER_URL", "").rstrip("/")
+    if push and not push.startswith("https://"):
+        raise BrandingError(f"IMAGINA_PUSH_SERVER_URL must be an https URL, not {push!r}")
+    source_code = P["IMAGINA_SOURCE_CODE_URL"]
+    if not source_code.startswith("https://"):
+        raise BrandingError(f"IMAGINA_SOURCE_CODE_URL must be an https URL (the GPL asks for it), not {source_code!r}")
     options = {
         r"var brand: String": swift_string(APP_NAME),
         r"var brandUserAgent: String": swift_string("Imagina"),
-        r"var textCopyrightNextcloudiOS: String": swift_string(f"{APP_NAME} for iOS %@, based on Nextcloud (not the official app)"),
+        # Shown at the foot of Settings: it says the app is modified and not Nextcloud's own.
+        r"var textCopyrightNextcloudiOS: String": swift_string(f"{APP_NAME} for iOS %@, a modified version of Nextcloud for iOS (not the official app)"),
         r"var loginBaseUrl: String": swift_string(cloud),
-        r"var pushNotificationServerProxy: String": swift_string(P.get("IMAGINA_PUSH_SERVER_URL", "")),
+        r"var pushNotificationServerProxy: String": swift_string(push),
         r"var linkLoginHost: String": swift_string(cloud),
         r"var linkloginPreferredProviders: String": swift_string(cloud),
         r"var privacy: String": swift_string(P["IMAGINA_PRIVACY_URL"]),
-        r"var sourceCode: String": swift_string(P["IMAGINA_SOURCE_CODE_URL"]),
+        r"var sourceCode: String": swift_string(source_code),
         r"var appStoreUrl: String": swift_string(P["IMAGINA_APP_STORE_URL"]),
         r"var capabilitiesGroup: String": swift_string(GROUP),
         r"var capabilitiesGroupApps: String": swift_string(f"{GROUP}.apps"),
@@ -196,6 +213,8 @@ def brand_options() -> None:
         r"var disable_crash_service: Bool": "true",
         r"var disable_mobileconfig: Bool": "true",
         r"var disable_show_more_nextcloud_apps_in_settings: Bool": "true",
+        # The link to the source code (GPL) stays in Settings.
+        r"var disable_source_code_in_settings: Bool": "false",
     }
     for pattern, value in options.items():
         text = set_line(text, pattern, value, path)
@@ -250,7 +269,8 @@ def hook_login() -> None:
 
 
 def hook_menu() -> None:
-    """«Configurar el correo de este iPhone» (imagina/Sources/ImaginaMailSetup.swift) in the Menu tab, above Settings."""
+    """«Configurar el correo» (imagina/Sources/ImaginaMailSetup.swift) in the Menu tab, above Settings. The row appears
+    while this iPhone is a connected device; `reload` builds the Menu again when the state of the profile changes."""
     path = "iOSClient/More/NCMoreModel.swift"
     text = upstream(path).decode()
     text = replace(
@@ -273,7 +293,7 @@ def hook_menu() -> None:
         text,
         anchor,
         "        // Imagina (IMAGINA.md): «Configurar el correo de este iPhone».\n"
-        "        if let mailSetup = ImaginaMailSetup.menuItem(presentingFrom: controller) {\n"
+        "        if let mailSetup = ImaginaMailSetup.menuItem(presentingFrom: controller, reload: { [weak self] in Task { await self?.loadItems() } }) {\n"
         "            settingsItems.append(Item(titleKey: mailSetup.title, image: mailSetup.image, destination: .imagina(mailSetup.action)))\n"
         "        }\n"
         "\n" + anchor,
@@ -282,20 +302,43 @@ def hook_menu() -> None:
     write(path, text)
 
 
+def hook_account_removal() -> None:
+    """The person removes the account in the app: this iPhone is disconnected from Imagina too (best effort)."""
+    path = "iOSClient/Account/Account Settings/NCAccountSettingsModel.swift"
+    text = upstream(path).decode()
+    anchor = "                await NCAccount().deleteAccount(tblAccount.account)\n"
+    text = replace(
+        text,
+        anchor,
+        anchor
+        + "                // Imagina (IMAGINA.md): this iPhone is no longer a device connected to Imagina either.\n"
+        + "                ImaginaDevice.disconnect()\n",
+        path,
+    )
+    write(path, text)
+
+
+def brand_notifications() -> None:
+    """The notification service extension names the app, not Nextcloud, when it cannot read a notification."""
+    path = "Notification Service Extension/NotificationService.swift"
+    text = upstream(path).decode()
+    text = replace(text, 'bestAttemptContent.body = "Nextcloud notification"', 'bestAttemptContent.body = "\\(NCBrandOptions.shared.brand) notification"', path)
+    write(path, text)
+
+
 def write_parameters() -> None:
     """imagina/Sources/ImaginaParameters.swift: the parameters the Imagina sources read. Generated, not in git."""
+    if P.get("IMAGINA_AUTH_HOST") and not P.get("IMAGINA_OAUTH_CLIENT_ID"):
+        raise BrandingError("IMAGINA_AUTH_HOST is set but IMAGINA_OAUTH_CLIENT_ID is not")
     values = {
         "applicationId": APP_ID,
         "cloudUrl": P["IMAGINA_CLOUD_URL"],
         "authHost": P.get("IMAGINA_AUTH_HOST", ""),
         "oauthClientId": P.get("IMAGINA_OAUTH_CLIENT_ID", ""),
-        "testNextcloudUser": P.get("IMAGINA_TEST_NC_USER", ""),
-        "testNextcloudAppPassword": P.get("IMAGINA_TEST_NC_APP_PASSWORD", ""),
-        "testMailProfileUrl": P.get("IMAGINA_TEST_MAIL_PROFILE_URL", ""),
     }
     lines = [
         "// Generated by imagina/apply-branding.py from imagina/imagina.properties and imagina.local.properties.",
-        "// Do not edit, and do not commit it (it can carry test credentials).",
+        "// Do not edit, and do not commit it (git ignores it).",
         "",
         "enum ImaginaParameters {",
         *(f"    static let {name} = {swift_string(value)}" for name, value in values.items()),
@@ -341,6 +384,8 @@ def main() -> int:
         brand_options()
         hook_login()
         hook_menu()
+        hook_account_removal()
+        brand_notifications()
         write_parameters()
         brand_images()
         brand_texts()

@@ -173,6 +173,8 @@ class NCAccountSettingsModel: ObservableObject, ViewOnAppearHandling {
         Task { @MainActor in
             if let tblAccount {
                 await NCAccount().deleteAccount(tblAccount.account)
+                // Imagina (IMAGINA.md): this iPhone is no longer a device connected to Imagina either.
+                ImaginaDevice.disconnect()
                 let account = database.getAllTableAccount().first?.account
                 setAccount(account: account)
                 dismissView = true

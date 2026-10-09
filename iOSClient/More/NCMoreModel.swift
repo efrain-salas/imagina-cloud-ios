@@ -302,7 +302,7 @@ final class NCMoreModel: ObservableObject {
         )
 
         // Imagina (IMAGINA.md): «Configurar el correo de este iPhone».
-        if let mailSetup = ImaginaMailSetup.menuItem(presentingFrom: controller) {
+        if let mailSetup = ImaginaMailSetup.menuItem(presentingFrom: controller, reload: { [weak self] in Task { await self?.loadItems() } }) {
             settingsItems.append(Item(titleKey: mailSetup.title, image: mailSetup.image, destination: .imagina(mailSetup.action)))
         }
 
