@@ -20,7 +20,8 @@ concurrency:
 jobs:
   build:
     if: github.event_name != 'schedule'
-    runs-on: macos-26
+    # GitHub names its Mac images after Xcode (xcode-27: Xcode 27 on macOS 27), as Nextcloud's own workflow does
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v7
         with:
