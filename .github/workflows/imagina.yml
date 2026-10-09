@@ -30,7 +30,8 @@ jobs:
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
-          xcode-version: latest-stable
+          # Nextcloud for iOS needs the iOS 27 SDK
+          xcode-version: "27"
       - name: Apply Imagina's branding
         run: python3 -I imagina/apply-branding.py
       - name: Build
