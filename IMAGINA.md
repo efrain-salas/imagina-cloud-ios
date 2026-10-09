@@ -109,10 +109,14 @@ qlmanage -t -s 1024 -o /tmp imagina/brand/imagina-cloud-icon-square.svg
 sips -s format png -z 1024 1024 /tmp/imagina-cloud-icon-square.svg.png --out imagina/brand/AppIcon-1024.png
 ```
 
+## Compilación automática
+
+`.github/workflows/imagina.yml` (GitHub Actions del repositorio público `efrain-salas/imagina-cloud-ios`, en un Mac de GitHub): aplica la marca y compila la app para el simulador en cada subida a `main`, y cada lunes abre una incidencia si Nextcloud ha publicado una versión posterior a `NEXTCLOUD_IOS_TAG`. El script de marca parte de la etiqueta de Nextcloud, así que cada etiqueta nueva se sube también al fork (`git push origin <etiqueta>`). Los flujos de Nextcloud que trae el fork están desactivados en GitHub (`gh workflow disable`): usan sus propios Mac. La firma y la subida a TestFlight llegarán con la cuenta de Apple (C11.6).
+
 ## Actualizar a una nueva versión de Nextcloud
 
 1. `git fetch upstream --tags` y `git merge <nueva>` sobre `main`. Los conflictos en ficheros que escribe el script se resuelven quedándose con cualquiera de las dos versiones: el paso 3 los reescribe.
-2. Cambiar `NEXTCLOUD_IOS_TAG` en `imagina/imagina.properties`.
+2. Cambiar `NEXTCLOUD_IOS_TAG` en `imagina/imagina.properties` y subir la etiqueta al fork (`git push origin <nueva>`).
 3. `python3 -I imagina/apply-branding.py`. Si se para, Nextcloud cambió el trozo que el script busca: revisar el cambio en Nextcloud y ajustar el script.
 4. Revisar opciones de marca nuevas: `git diff <anterior> <nueva> -- Brand/NCBrand.swift`, y extensiones o grupos de app nuevos: `git diff <anterior> <nueva> -- Brand/ Nextcloud.xcodeproj/project.pbxproj | grep -i 'twsweb\|group\.'`.
 5. Compilar e instalar en un iPhone y probar: «Entrar con Imagina» (la hoja se cierra sola y, al crearse la cuenta, ofrece configurar el correo), lista de ficheros, subir una foto, la app en Archivos, «Menú › Configurar el correo» hasta «Perfil instalado», desconectar el dispositivo desde Imagina y ver que la app vuelve a «Entrar con Imagina», y que no se vea «Nextcloud» en ninguna pantalla.

@@ -1,0 +1,64 @@
+# Imagina Cloud for iPhone (IMAGINA.md): applies Imagina's branding and builds the app for the simulator on every
+# push to main, and every Monday opens an issue when Nextcloud has published a release newer than NEXTCLOUD_IOS_TAG.
+
+name: "Imagina Cloud for iPhone"
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: imagina-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.event_name != 'schedule'
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # apply-branding.py starts from Nextcloud's files at NEXTCLOUD_IOS_TAG
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest-stable
+      - name: Apply Imagina's branding
+        run: python3 -I imagina/apply-branding.py
+      - name: Build
+        run: |
+          xcodebuild -project Nextcloud.xcodeproj -scheme Nextcloud -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+
+  upstream:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Warn of a new Nextcloud release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current=$(grep '^NEXTCLOUD_IOS_TAG=' imagina/imagina.properties | cut -d= -f2)
+          latest=$(gh release view --repo nextcloud/ios --json tagName -q .tagName)
+          if [ "$latest" = "$current" ]; then
+            echo "Up to date with $current"
+            exit 0
+          fi
+          title="Nextcloud for iOS $latest is out"
+          if gh issue list --state open --search "\"$title\" in:title" --json number -q '.[].number' | grep -q .; then
+            echo "Already warned: $title"
+            exit 0
+          fi
+          gh issue create --title "$title" --body "This version starts from \`$current\`. Nextcloud has published [\`$latest\`](https://github.com/nextcloud/ios/releases/tag/$latest): follow «Actualizar a una nueva versión de Nextcloud» in IMAGINA.md."
