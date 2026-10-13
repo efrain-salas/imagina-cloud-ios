@@ -5,7 +5,7 @@ With Imagina Cloud you can:
 • Upload photos, videos and documents, and scan paper with the camera.
 • Turn on automatic upload of your photos, so you never lose one.
 • Keep files offline and have them at hand even without signal.
-• Share files with the people on your team.
+• Share files with your team, or with your customers through a link.
 • Set up your company email in the iPhone's Mail app with a link, without typing servers or passwords.
 
 You sign in with your mobile number and a code we send you by SMS: no passwords to remember.

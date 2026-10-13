@@ -5,7 +5,7 @@ Con Imagina Cloud puedes:
 • Subir fotos, vídeos y documentos, y escanear papeles con la cámara.
 • Activar la subida automática de tus fotos, para no perder ninguna.
 • Guardar ficheros sin conexión y tenerlos a mano aunque no haya cobertura.
-• Compartir ficheros con las personas de tu equipo.
+• Compartir ficheros con tu equipo, o con tus clientes mediante un enlace.
 • Configurar el correo de tu empresa en la app Mail del iPhone con un enlace, sin escribir servidores ni contraseñas.
 
 Entras con tu número de móvil y un código que te llega por SMS: sin contraseñas que recordar.
