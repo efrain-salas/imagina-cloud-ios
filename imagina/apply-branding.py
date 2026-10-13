@@ -594,6 +594,12 @@ def brand_screens() -> None:
         text = replace(text, "backgroundColor = .systemBackground\n", f"backgroundColor = {background}\n", path, count=count)
         write(path, text)
 
+    # Activity (also inside a file's details, where Nextcloud uses the grouped grey).
+    path = "iOSClient/Activity/NCActivity.swift"
+    text = upstream(path).decode()
+    text = replace(text, "usesGroupedBackground ? .systemGroupedBackground : .systemBackground", background, path, count=2)
+    write(path, text)
+
     # Settings and its screens (SwiftUI): their Form and List on the canvas through ImaginaForm and ImaginaList
     # (imagina/Sources/ImaginaBrand.swift), which hide the system's grouped grey behind them.
     for path, form, plain in (

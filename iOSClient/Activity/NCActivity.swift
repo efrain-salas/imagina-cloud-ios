@@ -57,13 +57,13 @@ class NCActivity: UIViewController, NCSharePagingContent {
         super.viewDidLoad()
 
         navigationController?.setNavigationBarAppearance()
-        view.backgroundColor = usesGroupedBackground ? .systemGroupedBackground : .systemBackground
+        view.backgroundColor = NCBrandColor.shared.customerBackground
         self.title = NSLocalizedString("_activity_", comment: "")
 
         tableView.allowsSelection = false
         tableView.separatorColor = UIColor.clear
         tableView.contentInset = insets
-        tableView.backgroundColor = usesGroupedBackground ? .systemGroupedBackground : .systemBackground
+        tableView.backgroundColor = NCBrandColor.shared.customerBackground
         tableView.hideTopScrollEdgeEffect()
 
         if showComments {
