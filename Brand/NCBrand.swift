@@ -386,8 +386,9 @@ final class NCBrandColor: @unchecked Sendable {
 
 // MARK: - Imagina (IMAGINA.md)
 
-/// Imagina's typeface, Instrument Sans (`UIAppFonts` of iOSClient.plist), for the places that take their font from the brand
-/// layer. Where the font is not bundled (the extensions) the system font takes its place.
+/// Imagina's typefaces, Instrument Sans and Fraunces (`UIAppFonts` of iOSClient.plist), for the places that take their font
+/// from the brand layer. Where the font is not bundled (the extensions) the system font takes its place. In the app, every
+/// system font is already Instrument Sans (imagina/Sources/ImaginaFont.swift).
 enum NCBrandFont {
     static func font(size: CGFloat, weight: UIFont.Weight = .regular, relativeTo textStyle: UIFont.TextStyle? = nil) -> UIFont {
         let name: String
@@ -404,5 +405,15 @@ enum NCBrandFont {
         let font = UIFont(name: name, size: size) ?? UIFont.systemFont(ofSize: size, weight: weight)
         guard let textStyle else { return font }
         return UIFontMetrics(forTextStyle: textStyle).scaledFont(for: font)
+    }
+
+    /// Fraunces SemiBold (soft, optical size 24): the brand's face for big headlines and the title of an empty state, never
+    /// for body text, buttons or labels. Scales with Dynamic Type like `textStyle`, up to `maximumPointSize`. Where the font
+    /// is not bundled (the extensions) the system font takes its place.
+    static func display(size: CGFloat, relativeTo textStyle: UIFont.TextStyle, maximumPointSize: CGFloat? = nil) -> UIFont {
+        let font = UIFont(name: "Fraunces-SemiBold", size: size) ?? UIFont.systemFont(ofSize: size, weight: .semibold)
+        let metrics = UIFontMetrics(forTextStyle: textStyle)
+        guard let maximumPointSize else { return metrics.scaledFont(for: font) }
+        return metrics.scaledFont(for: font, maximumPointSize: maximumPointSize)
     }
 }

@@ -52,7 +52,8 @@ class NCSectionFirstHeaderEmptyData: UICollectionReusableView {
         // adjustsFontForContentSizeCategory:
         //     Enables live updates when accessibility settings change.
         //
-        emptyTitle.font = .headline()
+        // Imagina (IMAGINA.md): the title of an empty state in Fraunces.
+        emptyTitle.font = NCBrandFont.display(size: 20, relativeTo: .title3, maximumPointSize: 28)
         emptyTitle.adjustsFontForContentSizeCategory = true
 
         emptyDescription.font = .caption1()

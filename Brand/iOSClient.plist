@@ -87,6 +87,7 @@
 	<true/>
 	<key>UIAppFonts</key>
 	<array>
+		<string>Fraunces-SemiBold.ttf</string>
 		<string>InstrumentSans-Bold.ttf</string>
 		<string>InstrumentSans-Medium.ttf</string>
 		<string>InstrumentSans-Regular.ttf</string>

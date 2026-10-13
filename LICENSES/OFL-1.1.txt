@@ -1,6 +1,7 @@
 Copyright 2022 The Instrument Sans Project Authors (https://github.com/Instrument/instrument-sans)
+Copyright 2020 The Fraunces Project Authors (github.com/undercasetype/Fraunces)
 
-This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This Font Software (Instrument Sans and Fraunces, each under its own copyright above) is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
 https://openfontlicense.org
 

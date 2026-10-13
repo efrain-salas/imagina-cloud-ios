@@ -32,7 +32,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     var pushSubscriptionTask: Task<Void, Never>?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Imagina (IMAGINA.md): Instrument Sans in the tab bar.
+        // Imagina (IMAGINA.md): Instrument Sans for every system font, the canvas for the system's page backgrounds, the tab bar.
         ImaginaTheme.install()
 
         if isUiTestingEnabled {

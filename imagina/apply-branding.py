@@ -99,13 +99,14 @@ def write(path: str, text: str) -> None:
     (ROOT / path).write_text(text, encoding="utf-8")
 
 
-# Appended to Brand/NCBrand.swift, which every target of the project compiles: the font is looked up by name and the
-# system font takes its place where it is not bundled (only the app bundles Instrument Sans).
+# Appended to Brand/NCBrand.swift, which every target of the project compiles: the fonts are looked up by name and the
+# system font takes their place where they are not bundled (only the app bundles Instrument Sans and Fraunces).
 NC_BRAND_FONT = """
 // MARK: - Imagina (IMAGINA.md)
 
-/// Imagina's typeface, Instrument Sans (`UIAppFonts` of iOSClient.plist), for the places that take their font from the brand
-/// layer. Where the font is not bundled (the extensions) the system font takes its place.
+/// Imagina's typefaces, Instrument Sans and Fraunces (`UIAppFonts` of iOSClient.plist), for the places that take their font
+/// from the brand layer. Where the font is not bundled (the extensions) the system font takes its place. In the app, every
+/// system font is already Instrument Sans (imagina/Sources/ImaginaFont.swift).
 enum NCBrandFont {
     static func font(size: CGFloat, weight: UIFont.Weight = .regular, relativeTo textStyle: UIFont.TextStyle? = nil) -> UIFont {
         let name: String
@@ -122,6 +123,16 @@ enum NCBrandFont {
         let font = UIFont(name: name, size: size) ?? UIFont.systemFont(ofSize: size, weight: weight)
         guard let textStyle else { return font }
         return UIFontMetrics(forTextStyle: textStyle).scaledFont(for: font)
+    }
+
+    /// Fraunces SemiBold (soft, optical size 24): the brand's face for big headlines and the title of an empty state, never
+    /// for body text, buttons or labels. Scales with Dynamic Type like `textStyle`, up to `maximumPointSize`. Where the font
+    /// is not bundled (the extensions) the system font takes its place.
+    static func display(size: CGFloat, relativeTo textStyle: UIFont.TextStyle, maximumPointSize: CGFloat? = nil) -> UIFont {
+        let font = UIFont(name: "Fraunces-SemiBold", size: size) ?? UIFont.systemFont(ofSize: size, weight: .semibold)
+        let metrics = UIFontMetrics(forTextStyle: textStyle)
+        guard let maximumPointSize else { return metrics.scaledFont(for: font) }
+        return metrics.scaledFont(for: font, maximumPointSize: maximumPointSize)
     }
 }
 """
@@ -212,10 +223,10 @@ def brand_entitlements_and_plists() -> None:
     text = replace(text, "<key>CFBundleDisplayName</key>\n\t<string>Nextcloud</string>", f"<key>CFBundleDisplayName</key>\n\t<string>{APP_NAME}</string>", path)
     text = replace(text, "<key>CFBundleURLName</key>\n\t\t\t<string>it.twsweb.Nextcloud</string>", f"<key>CFBundleURLName</key>\n\t\t\t<string>{APP_ID}</string>", path)
     text = replace(text, "<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>nextcloud</string>", f"<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>{SCHEME}</string>", path)
-    # Instrument Sans (imagina/Sources/Fonts, bundled by the synchronized folder). Fonts of the app go in at the root of the bundle.
+    # Instrument Sans and Fraunces (imagina/Sources/Fonts, bundled by the synchronized folder). Fonts of the app go in at the root of the bundle.
     fonts = "".join(f"\t\t<string>{font.name}</string>\n" for font in sorted((IMAGINA / "Sources" / "Fonts").glob("*.ttf")))
     if not fonts:
-        raise BrandingError("imagina/Sources/Fonts has no font (imagina/brand/name-fonts.py writes them)")
+        raise BrandingError("imagina/Sources/Fonts has no font")
     text = replace(text, "\t<key>UIApplicationSceneManifest</key>\n", f"\t<key>UIAppFonts</key>\n\t<array>\n{fonts}\t</array>\n\t<key>UIApplicationSceneManifest</key>\n", path)
     # The launch screen is on the canvas (light or dark): the status bar follows the theme instead of staying light.
     text = replace(text, "<key>UIStatusBarStyle</key>\n\t<string>UIStatusBarStyleLightContent</string>", "<key>UIStatusBarStyle</key>\n\t<string>UIStatusBarStyleDefault</string>", path)
@@ -424,8 +435,8 @@ def hook_account_removal() -> None:
 def hook_app_delegate() -> None:
     """The notices of new mail (imagina/Sources/ImaginaPush.swift and ImaginaMailNotice.swift, C12.6): the app's APNs token
     also goes to Imagina's devices API, and a tap on Imagina's notice opens the message in Mail before Nextcloud looks at
-    the response. Nextcloud's own notifications are not touched. And the typeface of the tab bar (ImaginaTheme), set when
-    the app starts."""
+    the response. Nextcloud's own notifications are not touched. And Imagina's look (ImaginaTheme: the typeface, the canvas and
+    the tab bar's titles), installed when the app starts."""
     path = "iOSClient/AppDelegate.swift"
     text = upstream(path).decode()
 
@@ -434,7 +445,7 @@ def hook_app_delegate() -> None:
         text,
         anchor,
         anchor
-        + "        // Imagina (IMAGINA.md): Instrument Sans in the tab bar.\n"
+        + "        // Imagina (IMAGINA.md): Instrument Sans for every system font, the canvas for the system's page backgrounds, the tab bar.\n"
         + "        ImaginaTheme.install()\n"
         + "\n",
         path,
@@ -498,10 +509,11 @@ def write_parameters() -> None:
 
 
 def brand_screens() -> None:
-    """Screens on the canvas (cream, with ink text) where Nextcloud paints the brand colour as a background, and the main
-    screens (files, media, Menu) and bars on the canvas instead of the system's white. Teal stays as the accent: the tints,
-    the buttons, the switches and the selection come from the theme of the server (`color-element`, teal) as before.
-    Settings, the sheets and the viewers keep the system's backgrounds (see IMAGINA.md)."""
+    """Screens on the canvas (cream, with ink text) where Nextcloud paints the brand colour as a background. The main screens
+    (files, media, Menu, trash, folder picker, activity, shares, Settings...) are on the canvas without a line changed here:
+    ImaginaCanvas (imagina/Sources/ImaginaBrand.swift) makes `UIColor.systemBackground` and `.systemGroupedBackground`, which
+    they paint, the canvas. Teal stays as the accent: the tints, the buttons, the switches and the selection come from the
+    theme of the server (`color-element`, teal) as before."""
     background = "NCBrandColor.shared.customerBackground"
     ink = "NCBrandColor.shared.customerBackgroundText"
 
@@ -535,10 +547,10 @@ def brand_screens() -> None:
     text = replace(text, "LinearProgressViewStyle(tint: .white)", "LinearProgressViewStyle(tint: Color(NCBrandColor.shared.customer))", path)
     write(path, text)
 
-    # Navigation bars: the canvas (before iOS 26, which draws its own) and Instrument Sans in the title and the text buttons.
+    # Navigation bars: Instrument Sans in the title and the text buttons (their background, `.systemBackground` by default, is
+    # the canvas through ImaginaCanvas, before iOS 26, which draws its own).
     path = "iOSClient/Extensions/UINavigationController+Extension.swift"
     text = upstream(path).decode()
-    text = replace(text, "backgroundColor: UIColor? = .systemBackground) {", f"backgroundColor: UIColor? = {background}) {{", path)
     text = replace(
         text,
         "        appearance.titleTextAttributes = [.foregroundColor: textColor]\n",
@@ -550,32 +562,10 @@ def brand_screens() -> None:
     )
     write(path, text)
 
+    # The Menu's navigation bar is `.systemGray6`, which ImaginaCanvas does not touch.
     path = "iOSClient/More/NCMoreNavigationController.swift"
     text = upstream(path).decode()
     text = replace(text, "setNavigationBarAppearance(backgroundColor: .systemGray6)", f"setNavigationBarAppearance(backgroundColor: {background})", path)
-    write(path, text)
-
-    # Files, Favorites, Offline, Shares and the rest of the lists that share NCCollectionViewCommon.
-    path = "iOSClient/Main/Collection Common/NCCollectionViewCommon.swift"
-    text = upstream(path).decode()
-    text = replace(
-        text,
-        "        view.backgroundColor = .systemBackground\n        collectionView.backgroundColor = .systemBackground\n",
-        f"        view.backgroundColor = {background}\n        collectionView.backgroundColor = {background}\n",
-        path,
-    )
-    write(path, text)
-
-    path = "iOSClient/Media/NCMedia.swift"
-    text = upstream(path).decode()
-    text = replace(text, "        view.backgroundColor = .systemBackground\n", f"        view.backgroundColor = {background}\n", path)
-    text = replace(text, "        collectionView.backgroundColor = .systemBackground\n", f"        collectionView.backgroundColor = {background}\n", path)
-    write(path, text)
-
-    # The Menu tab: the canvas behind its white cards.
-    path = "iOSClient/More/NCMoreView.swift"
-    text = upstream(path).decode()
-    text = replace(text, "Color(.systemGroupedBackground)", f"Color({background})", path, count=3)
     write(path, text)
 
     # The foot of Settings, where the app says what it is: the wordmark above the notice.
@@ -590,21 +580,57 @@ def brand_screens() -> None:
     )
     write(path, text)
 
-
-def brand_licences() -> None:
-    """Instrument Sans is under the SIL Open Font License (LICENSES/OFL-1.1.txt): REUSE needs to know."""
-    path = "REUSE.toml"
+    # The title of an empty state («Sin archivos»…): Fraunces, as the brand book asks for EmptyState titles (the one place
+    # every empty list of the app shares: Files, Favorites, Trash, the folder picker…).
+    path = "iOSClient/Main/Collection Common/Section Header Footer/NCSectionFirstHeaderEmptyData.swift"
     text = upstream(path).decode()
-    text = text.rstrip("\n") + (
-        "\n\n"
-        "# Imagina Cloud (IMAGINA.md): the typeface of the brand, bundled in the app.\n"
-        "[[annotations]]\n"
-        'path = ["imagina/Sources/Fonts/*.ttf"]\n'
-        'precedence = "aggregate"\n'
-        'SPDX-FileCopyrightText = "2022 The Instrument Sans Project Authors (https://github.com/Instrument/instrument-sans)"\n'
-        'SPDX-License-Identifier = "OFL-1.1"\n'
+    text = replace(
+        text,
+        "        emptyTitle.font = .headline()\n",
+        "        // Imagina (IMAGINA.md): the title of an empty state in Fraunces.\n"
+        "        emptyTitle.font = NCBrandFont.display(size: 20, relativeTo: .title3, maximumPointSize: 28)\n",
+        path,
     )
     write(path, text)
+
+
+# The families bundled in imagina/Sources/Fonts, under the SIL Open Font License 1.1 (LICENSES/OFL-1.1.txt): glob, repository
+# and copyright line of each (the lines the brand kit's fonts carry in their name tables).
+FONT_FAMILIES = (
+    ("Instrument Sans", "InstrumentSans-*.ttf", "https://github.com/Instrument/instrument-sans", "2022 The Instrument Sans Project Authors (https://github.com/Instrument/instrument-sans)"),
+    ("Fraunces", "Fraunces-*.ttf", "https://github.com/undercasetype/Fraunces", "2020 The Fraunces Project Authors (github.com/undercasetype/Fraunces)"),
+)
+
+
+def brand_licences() -> None:
+    """The fonts are under the SIL Open Font License: REUSE needs to know (REUSE.toml), and so do the people who use the app
+    (the «Agradecimientos» screen of Settings shows Acknowledgements.rtf)."""
+    path = "REUSE.toml"
+    text = upstream(path).decode()
+    text = text.rstrip("\n") + "\n"
+    for name, glob, _repository, copyright_line in FONT_FAMILIES:
+        text += (
+            "\n"
+            f"# Imagina Cloud (IMAGINA.md): {name}, a typeface of the brand, bundled in the app.\n"
+            "[[annotations]]\n"
+            f'path = ["imagina/Sources/Fonts/{glob}"]\n'
+            'precedence = "aggregate"\n'
+            f'SPDX-FileCopyrightText = "{copyright_line}"\n'
+            'SPDX-License-Identifier = "OFL-1.1"\n'
+        )
+    write(path, text)
+
+    # Acknowledgements.rtf is what the screen shows (its text, not its formatting): Nextcloud's file plus the fonts, in the same
+    # layout (`\\` and a line break is a paragraph). It is cp1252: read and written byte for byte.
+    path = "iOSClient/Settings/Acknowledgements.rtf"
+    text = upstream(path).decode("latin-1")
+    separator = "__________________________________\\\n"
+    block = ""
+    for name, _glob, repository, copyright_line in FONT_FAMILIES:
+        holders = copyright_line.split(" (")[0]
+        block += f"\\\n\\f1\\b {name}\n\\f0\\b0 \\\n\\\n{repository}\\\n\\\nSIL Open Font License 1.1\\\n\\\nCopyright {holders}\\\n{separator}"
+    text = replace(text, separator + "}", separator + block + "}", path)
+    (ROOT / path).write_bytes(text.encode("latin-1"))
 
 
 # ---------------------------------------------------------------------------------------------------

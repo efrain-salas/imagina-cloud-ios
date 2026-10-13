@@ -54,8 +54,8 @@ struct NCMoreView: View {
                 .padding(.bottom, 20)
             }
             .overlay(alignment: .bottom) {
-                LinearGradient(colors: [Color(NCBrandColor.shared.customerBackground).opacity(0),
-                                        Color(NCBrandColor.shared.customerBackground)],
+                LinearGradient(colors: [Color(.systemGroupedBackground).opacity(0),
+                                        Color(.systemGroupedBackground)],
                                startPoint: .top,
                                endPoint: .bottom)
                     .frame(height: 32)
@@ -65,7 +65,7 @@ struct NCMoreView: View {
 
             quotaSection
         }
-        .background(Color(NCBrandColor.shared.customerBackground).ignoresSafeArea())
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .task {
             guard loadItemsOnAppear else { return }
             await model.loadItems()
