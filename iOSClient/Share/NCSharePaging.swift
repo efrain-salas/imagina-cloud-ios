@@ -54,7 +54,7 @@ class NCSharePaging: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .systemGroupedBackground
+        view.backgroundColor = NCBrandColor.shared.customerBackground
         title = NSLocalizedString("_details_", comment: "")
 
         navigationItem.leftBarButtonItem = UIBarButtonItem(
@@ -100,7 +100,7 @@ class NCSharePaging: UIViewController {
     private func setupHeader() {
         guard let headerView = Bundle.main.loadNibNamed("NCShareHeader", owner: self, options: nil)?.first as? NCShareHeader else { return }
         self.headerView = headerView
-        headerView.backgroundColor = .systemGroupedBackground
+        headerView.backgroundColor = NCBrandColor.shared.customerBackground
         headerView.setupUI(with: metadata)
 
         view.addSubview(headerView)
@@ -123,7 +123,7 @@ class NCSharePaging: UIViewController {
             }
         )
         let host = UIHostingController(rootView: content)
-        host.view.backgroundColor = .systemGroupedBackground
+        host.view.backgroundColor = NCBrandColor.shared.customerBackground
 
         addChild(host)
         view.addSubview(host.view)

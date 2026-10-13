@@ -594,6 +594,12 @@ def brand_screens() -> None:
         text = replace(text, "backgroundColor = .systemBackground\n", f"backgroundColor = {background}\n", path, count=count)
         write(path, text)
 
+    # A file's details and sharing, which paint the grouped grey.
+    for path, count in (("iOSClient/Share/NCSharePaging.swift", 3), ("iOSClient/Share/NCShare.swift", 2)):
+        text = upstream(path).decode()
+        text = replace(text, "backgroundColor = .systemGroupedBackground\n", f"backgroundColor = {background}\n", path, count=count)
+        write(path, text)
+
     # Activity (also inside a file's details, where Nextcloud uses the grouped grey).
     path = "iOSClient/Activity/NCActivity.swift"
     text = upstream(path).decode()
