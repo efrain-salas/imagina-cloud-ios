@@ -22,8 +22,10 @@ ROOT = Path(__file__).resolve().parent.parent
 IMAGINA = ROOT / "imagina"
 
 
-def read_parameters() -> dict:
+def read_parameters() -> tuple[dict, list[str]]:
+    """(the parameters, the keys of imagina.local.properties that replace one of imagina.properties)."""
     parameters = {}
+    overridden = []
     for name in ("imagina.properties", "imagina.local.properties"):
         path = IMAGINA / name
         if not path.exists():
@@ -32,11 +34,14 @@ def read_parameters() -> dict:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 key, value = line.split("=", 1)
-                parameters[key.strip()] = value.strip()
-    return parameters
+                key = key.strip()
+                if name == "imagina.local.properties" and key in parameters and parameters[key] != value.strip():
+                    overridden.append(key)
+                parameters[key] = value.strip()
+    return parameters, overridden
 
 
-P = read_parameters()
+P, LOCAL_OVERRIDES = read_parameters()
 TAG = P["NEXTCLOUD_IOS_TAG"]
 APP_ID = P["IMAGINA_APPLICATION_ID"]
 APP_NAME = P["IMAGINA_APP_NAME"]
@@ -166,6 +171,44 @@ def brand_project() -> None:
         anchor = f"\t\t{configuration} = {{\n\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = {{\n"
         text = replace(text, anchor, anchor + f"\t\t\t\tDEVELOPMENT_TEAM = {TEAM};\n", path)
 
+    # The App Store version and build number of the app and of every extension (they inherit the project's). Each upload to
+    # App Store Connect needs a build number higher than the last one of the same version: raise IMAGINA_BUILD_NUMBER.
+    for configuration, anchor_text in (("Debug", "F7F67BC91A24D27800EE80DA /* Debug */"), ("Release", "F7F67BCA1A24D27800EE80DA /* Release */")):
+        for key, parameter, pattern in (
+            ("MARKETING_VERSION", "IMAGINA_MARKETING_VERSION", r"\d+(\.\d+){0,2}"),
+            ("CURRENT_PROJECT_VERSION", "IMAGINA_BUILD_NUMBER", r"\d+(\.\d+){0,2}"),
+        ):
+            value = P.get(parameter)
+            if not value:
+                continue
+            if not re.fullmatch(pattern, value):
+                raise BrandingError(f"{parameter} must be numbers separated by dots, not {value!r}")
+            block = re.search(rf"\t\t{re.escape(anchor_text)} = \{{\n.*?\n\t\t\}};\n", text, re.DOTALL)
+            if not block or len(re.findall(rf"\b{key} = [^;]+;", block.group(0))) != 1:
+                raise BrandingError(f"{path}: expected one {key} in the project's {configuration} configuration")
+            text = text.replace(block.group(0), re.sub(rf"\b{key} = [^;]+;", f"{key} = {value};", block.group(0)))
+
+    # The widget extension's name (its Info.plist is generated from these keys), not «Nextcloud».
+    text = replace(text, "INFOPLIST_KEY_CFBundleDisplayName = Nextcloud;", f'INFOPLIST_KEY_CFBundleDisplayName = "{APP_NAME}";', path, count=2)
+
+    # Nextcloud's privacy manifest (the one its other extensions carry) also goes in the Action Assistant and the background
+    # upload extension, which use the same required-reason APIs (UserDefaults, file dates) and ship without one.
+    privacy_manifest = "F7E402282BA85D1D007E5609 /* PrivacyInfo.xcprivacy */"
+    extension_manifests = (
+        ("1A1B25C10D0000000000C002", "F7C55C782FB5AEF7004A974F"),  # Action Assistant, Resources phase
+        ("1A1B25C10D0000000000C003", "F7FB187E30401D0D00EB0AE6"),  # BackgroundUploadExtension, Resources phase
+    )
+    for build_file, phase in extension_manifests:
+        entry = f"{build_file} /* PrivacyInfo.xcprivacy in Resources */"
+        text = replace(
+            text,
+            "/* End PBXBuildFile section */",
+            f"\t\t{entry} = {{isa = PBXBuildFile; fileRef = {privacy_manifest}; }};\n/* End PBXBuildFile section */",
+            path,
+        )
+        phase_head = f"\t\t{phase} /* Resources */ = {{\n\t\t\tisa = PBXResourcesBuildPhase;\n\t\t\tbuildActionMask = 2147483647;\n\t\t\tfiles = (\n"
+        text = replace(text, phase_head, phase_head + f"\t\t\t\t{entry},\n", path)
+
     # imagina/Sources as a folder Xcode keeps in sync, compiled into the app target only.
     group_id = "1A1B25C10D0000000000C001"
     group = f"{group_id} /* Imagina */"
@@ -230,6 +273,15 @@ def brand_entitlements_and_plists() -> None:
     text = replace(text, "\t<key>UIApplicationSceneManifest</key>\n", f"\t<key>UIAppFonts</key>\n\t<array>\n{fonts}\t</array>\n\t<key>UIApplicationSceneManifest</key>\n", path)
     # The launch screen is on the canvas (light or dark): the status bar follows the theme instead of staying light.
     text = replace(text, "<key>UIStatusBarStyle</key>\n\t<string>UIStatusBarStyleLightContent</string>", "<key>UIStatusBarStyle</key>\n\t<string>UIStatusBarStyleDefault</string>", path)
+    # Export compliance: the code in Nextcloud's file was issued to Nextcloud for its documents, not to Imagina. The app does
+    # use encryption beyond the system's (OpenSSL for end-to-end encryption), so ITSAppUsesNonExemptEncryption stays true; the
+    # code is Imagina's own (IMAGINA_ENCRYPTION_COMPLIANCE_CODE, which App Store Connect gives once Imagina's export
+    # documents are uploaded) or none, and then App Store Connect asks the export questions for each build.
+    nextcloud_code = "\t<key>ITSEncryptionExportComplianceCode</key>\n\t<string>8e9f9874-938e-460b-a9be-f82cb3393971</string>\n"
+    own_code = P.get("IMAGINA_ENCRYPTION_COMPLIANCE_CODE", "")
+    if own_code and not re.fullmatch(r"[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", own_code):
+        raise BrandingError("IMAGINA_ENCRYPTION_COMPLIANCE_CODE must be a UUID, as App Store Connect gives it")
+    text = replace(text, nextcloud_code, f"\t<key>ITSEncryptionExportComplianceCode</key>\n\t<string>{own_code}</string>\n" if own_code else "", path)
     write(path, text)
 
     # Names in the Files app and the share sheet.
@@ -796,6 +848,8 @@ def main() -> int:
         print(f"apply-branding: {error}", file=sys.stderr)
         return 1
     print(f"Imagina Cloud branding applied on Nextcloud {TAG} ({APP_ID}).")
+    if LOCAL_OVERRIDES:
+        print(f"Note: imagina.local.properties replaces {', '.join(LOCAL_OVERRIDES)}: not for a build that goes to TestFlight or the App Store.")
     return 0
 
 
