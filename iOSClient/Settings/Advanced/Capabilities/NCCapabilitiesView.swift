@@ -10,7 +10,7 @@ struct NCCapabilitiesView: View {
 
     var body: some View {
         VStack {
-            List {
+            ImaginaList {
                 Section {
                     ForEach(model.capabililies, id: \.id) { capability in
                         HStack {

@@ -1,6 +1,6 @@
 // Imagina Cloud (IMAGINA.md). New file in imagina/Sources: updates of Nextcloud never conflict with it.
 
-import ObjectiveC
+import SwiftUI
 import UIKit
 
 /// Colours of Imagina's brand book used by the screens Imagina adds, in the light and the dark theme. Screens are on the
@@ -11,8 +11,6 @@ enum ImaginaColor {
     static let canvas = NCBrandColor.shared.customerBackground
     /// ink: the text on the canvas (`IMAGINA_INK`, `IMAGINA_INK_DARK`).
     static let ink = NCBrandColor.shared.customerBackgroundText
-    /// surface: cards and grouped rows on the canvas (white; `#1A1B25` in the dark theme).
-    static let surface = dynamic(light: 0xFFFFFF, dark: 0x1A1B25)
     /// ink-secondary: help text.
     static let inkSecondary = dynamic(light: 0x474B57, dark: 0xC9CBD3)
     /// accent: the primary action.
@@ -33,61 +31,52 @@ enum ImaginaColor {
     }
 }
 
-/// Imagina's look where Nextcloud's code gives no hook of its own. The typeface and the canvas are installed when the app
-/// starts; the navigation bars take Instrument Sans where Nextcloud builds their appearance and the sign-in screen from its
+/// Imagina's look where Nextcloud's code gives no hook of its own. The typeface is installed when the app starts; the navigation bars take Instrument Sans where Nextcloud builds their appearance and the sign-in screen from its
 /// own code (the font itself comes from `NCBrandFont`).
 @MainActor
 enum ImaginaTheme {
-    /// Called when the app starts (`AppDelegate`): the titles of the tab bar, Instrument Sans for every system font
-    /// (`ImaginaFont`) and the canvas for the system's page backgrounds (`ImaginaCanvas`).
+    /// Called when the app starts (`AppDelegate`): the titles of the tab bar and Instrument Sans for every system font
+    /// (`ImaginaFont`).
     static func install() {
         let attributes: [NSAttributedString.Key: Any] = [.font: NCBrandFont.font(size: 10, weight: .medium)]
         for state in [UIControl.State.normal, .selected, .highlighted] {
             UITabBarItem.appearance().setTitleTextAttributes(attributes, for: state)
         }
         ImaginaFont.install()
-        ImaginaCanvas.install()
     }
 }
 
-/// The canvas (cream; `#111219` in the dark theme) wherever Nextcloud's code, and the system's own views that ask for it, paint
-/// `UIColor.systemBackground` or `.systemGroupedBackground` as the background of a screen: Files, Favorites, Media, the Menu,
-/// Trash, the folder picker, Activity, Shares, the notifications, SwiftUI's Forms and Lists (Settings and its screens) and the
-/// sheets. Cards and grouped rows (`.secondarySystemGroupedBackground`) are the surface (white; `#1A1B25` in the dark theme):
-/// «surface» on «canvas», as the brand book asks. Every other system colour is left as it is.
-///
-/// `replacesSystemBackgrounds` is the switch: `false` gives the system's white and grey back to every one of them.
-enum ImaginaCanvas {
-    static let replacesSystemBackgrounds = true
+/// SwiftUI's Form and List on the canvas (cream; `#111219` in the dark theme), with their rows on the system's white: the screens
+/// of Settings, where Nextcloud writes `Form {` and `List {` and `apply-branding.py` writes `ImaginaForm {` and `ImaginaList {`.
+/// Not by replacing `UIColor.systemGroupedBackground` at run time: a system colour replaced that way makes iOS 26 lose the
+/// tint of its glass (the selected tab and the main button of an alert come out white).
+struct ImaginaForm<Content: View>: View {
+    private let content: () -> Content
 
-    private static var isInstalled = false
+    init(@ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+    }
 
-    @MainActor
-    static func install() {
-        guard replacesSystemBackgrounds, !isInstalled else { return }
-        isInstalled = true
-        let pairs = [
-            ("systemBackgroundColor", "imagina_systemBackgroundColor"),
-            ("systemGroupedBackgroundColor", "imagina_systemGroupedBackgroundColor"),
-            ("secondarySystemGroupedBackgroundColor", "imagina_secondarySystemGroupedBackgroundColor")
-        ]
-        for (system, imagina) in pairs {
-            guard let systemMethod = class_getClassMethod(UIColor.self, NSSelectorFromString(system)),
-                  let imaginaMethod = class_getClassMethod(UIColor.self, NSSelectorFromString(imagina)) else { continue }
-            method_exchangeImplementations(systemMethod, imaginaMethod)
-        }
+    var body: some View {
+        Form(content: content)
+            .scrollContentBackground(.hidden)
+            .background(Color(ImaginaColor.canvas))
     }
 }
 
-extension UIColor {
-    @objc(imagina_systemBackgroundColor)
-    class func imagina_systemBackground() -> UIColor { ImaginaColor.canvas }
+/// `List` on the canvas, as ``ImaginaForm``.
+struct ImaginaList<Content: View>: View {
+    private let content: () -> Content
 
-    @objc(imagina_systemGroupedBackgroundColor)
-    class func imagina_systemGroupedBackground() -> UIColor { ImaginaColor.canvas }
+    init(@ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+    }
 
-    @objc(imagina_secondarySystemGroupedBackgroundColor)
-    class func imagina_secondarySystemGroupedBackground() -> UIColor { ImaginaColor.surface }
+    var body: some View {
+        List(content: content)
+            .scrollContentBackground(.hidden)
+            .background(Color(ImaginaColor.canvas))
+    }
 }
 
 /// Texts of the screens Imagina adds: Spanish (Spain), tuteo, and English for any other language.

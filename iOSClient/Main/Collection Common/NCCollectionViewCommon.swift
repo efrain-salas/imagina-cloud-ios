@@ -197,8 +197,8 @@ class NCCollectionViewCommon: UIViewController, NCAccountSettingsModelDelegate, 
         collectionView.accessibilityIdentifier = "NCCollectionViewCommon"
         collectionView.hideTopScrollEdgeEffect()
 
-        view.backgroundColor = .systemBackground
-        collectionView.backgroundColor = .systemBackground
+        view.backgroundColor = NCBrandColor.shared.customerBackground
+        collectionView.backgroundColor = NCBrandColor.shared.customerBackground
         refreshControl.tintColor = .clear
         definesPresentationContext = true
 

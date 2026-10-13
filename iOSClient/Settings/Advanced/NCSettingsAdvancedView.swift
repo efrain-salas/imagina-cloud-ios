@@ -17,7 +17,7 @@ struct NCSettingsAdvancedView: View {
     @State var showCrashReporter: Bool = false
 
     var body: some View {
-        Form {
+        ImaginaForm {
             // file name
             Section(content: {
                NavigationLink(destination: LazyView {

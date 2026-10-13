@@ -9,7 +9,7 @@ struct NCDisplayView: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        Form {
+        ImaginaForm {
             Section(header: Text(NSLocalizedString("_appearance_", comment: "")).font(.headline)) {
                 VStack {
                     HStack {

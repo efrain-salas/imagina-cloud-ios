@@ -11,7 +11,7 @@ struct SelectAlbumView: View {
     @State var selectedAlbums = Set<String>()
 
     var body: some View {
-        List {
+        ImaginaList {
             Section {
                 SelectionButton(model: model, album: model.allPhotosCollection, assetCount: model.allPhotosCollection?.assetCount ?? 0, selection: $selectedAlbums)
             }

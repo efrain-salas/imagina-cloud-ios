@@ -10,7 +10,7 @@ struct NCLogFilesView: View {
     @State private var logErrorMessage = ""
 
     var body: some View {
-        List {
+        ImaginaList {
             Section {
                 Button {
                     Task { await model.clearLogFile() }

@@ -16,7 +16,7 @@ struct NCManageE2EEView: View {
     var body: some View {
         VStack {
             if model.isEndToEndEnabled {
-                List {
+                ImaginaList {
                     Section(header: Text("").font(.headline),
                             footer: Text(model.statusOfService + "\n\n" + "End-to-End Encryption " + model.capabilities.e2EEApiVersion).font(.footnote)) {
                         Label {
@@ -148,7 +148,7 @@ struct NCManageE2EEView: View {
 #endif
                 }
             } else {
-                List {
+                ImaginaList {
                     Section(header: Text("").font(.headline),
                             footer: Text(model.statusOfService + "\n\n" + "End-to-End Encryption " + model.capabilities.e2EEApiVersion).font(.footnote)) {
                         HStack {

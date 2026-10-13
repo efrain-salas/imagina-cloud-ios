@@ -509,11 +509,10 @@ def write_parameters() -> None:
 
 
 def brand_screens() -> None:
-    """Screens on the canvas (cream, with ink text) where Nextcloud paints the brand colour as a background. The main screens
-    (files, media, Menu, trash, folder picker, activity, shares, Settings...) are on the canvas without a line changed here:
-    ImaginaCanvas (imagina/Sources/ImaginaBrand.swift) makes `UIColor.systemBackground` and `.systemGroupedBackground`, which
-    they paint, the canvas. Teal stays as the accent: the tints, the buttons, the switches and the selection come from the
-    theme of the server (`color-element`, teal) as before."""
+    """Screens on the canvas (cream, with ink text) where Nextcloud paints the brand colour as a background, and the main
+    screens (files, media, Menu) and bars on the canvas instead of the system's white. Settings, the sheets and the other
+    lists get it from ImaginaCanvas (imagina/Sources/ImaginaBrand.swift). Teal stays as the accent: the tints, the buttons,
+    the switches and the selection come from the theme of the server (`color-element`, teal) as before."""
     background = "NCBrandColor.shared.customerBackground"
     ink = "NCBrandColor.shared.customerBackgroundText"
 
@@ -547,10 +546,10 @@ def brand_screens() -> None:
     text = replace(text, "LinearProgressViewStyle(tint: .white)", "LinearProgressViewStyle(tint: Color(NCBrandColor.shared.customer))", path)
     write(path, text)
 
-    # Navigation bars: Instrument Sans in the title and the text buttons (their background, `.systemBackground` by default, is
-    # the canvas through ImaginaCanvas, before iOS 26, which draws its own).
+    # Navigation bars: the canvas (before iOS 26, which draws its own) and Instrument Sans in the title and the text buttons.
     path = "iOSClient/Extensions/UINavigationController+Extension.swift"
     text = upstream(path).decode()
+    text = replace(text, "backgroundColor: UIColor? = .systemBackground) {", f"backgroundColor: UIColor? = {background}) {{", path)
     text = replace(
         text,
         "        appearance.titleTextAttributes = [.foregroundColor: textColor]\n",
@@ -562,7 +561,59 @@ def brand_screens() -> None:
     )
     write(path, text)
 
-    # The Menu's navigation bar is `.systemGray6`, which ImaginaCanvas does not touch.
+    # Files, Favorites, Offline, Shares and the rest of the lists that share NCCollectionViewCommon.
+    path = "iOSClient/Main/Collection Common/NCCollectionViewCommon.swift"
+    text = upstream(path).decode()
+    text = replace(
+        text,
+        "        view.backgroundColor = .systemBackground\n        collectionView.backgroundColor = .systemBackground\n",
+        f"        view.backgroundColor = {background}\n        collectionView.backgroundColor = {background}\n",
+        path,
+    )
+    write(path, text)
+
+    path = "iOSClient/Media/NCMedia.swift"
+    text = upstream(path).decode()
+    text = replace(text, "        view.backgroundColor = .systemBackground\n", f"        view.backgroundColor = {background}\n", path)
+    text = replace(text, "        collectionView.backgroundColor = .systemBackground\n", f"        collectionView.backgroundColor = {background}\n", path)
+    write(path, text)
+
+    # The Menu tab: the canvas behind its white cards.
+    path = "iOSClient/More/NCMoreView.swift"
+    text = upstream(path).decode()
+    text = replace(text, "Color(.systemGroupedBackground)", f"Color({background})", path, count=3)
+    write(path, text)
+
+    # Trash, the notifications and the folder picker, which paint the system's white.
+    for path, count in (
+        ("iOSClient/Trash/NCTrash.swift", 2),
+        ("iOSClient/Notification/NCNotification.swift", 2),
+        ("iOSClient/Select/NCSelect.swift", 3),
+    ):
+        text = upstream(path).decode()
+        text = replace(text, "backgroundColor = .systemBackground\n", f"backgroundColor = {background}\n", path, count=count)
+        write(path, text)
+
+    # Settings and its screens (SwiftUI): their Form and List on the canvas through ImaginaForm and ImaginaList
+    # (imagina/Sources/ImaginaBrand.swift), which hide the system's grouped grey behind them.
+    for path, form, plain in (
+        ("iOSClient/Settings/Display/NCDisplayView.swift", 1, 0),
+        ("iOSClient/Settings/AutoUpload/NCAutoUploadView.swift", 1, 0),
+        ("iOSClient/Settings/Advanced/NCSettingsAdvancedView.swift", 1, 0),
+        ("iOSClient/Settings/Advanced/File Name/NCFileNameView.swift", 1, 0),
+        ("iOSClient/Settings/Advanced/NCLogFilesView.swift", 0, 1),
+        ("iOSClient/Settings/Advanced/Capabilities/NCCapabilitiesView.swift", 0, 1),
+        ("iOSClient/Settings/E2EE/NCManageE2EEView.swift", 0, 2),
+        ("iOSClient/Settings/SelectAlbum/SelectAlbumView.swift", 0, 1),
+    ):
+        text = upstream(path).decode()
+        if form:
+            text = replace(text, " Form {\n", " ImaginaForm {\n", path, count=form)
+        if plain:
+            text = replace(text, " List {\n", " ImaginaList {\n", path, count=plain)
+        write(path, text)
+
+    # The Menu's navigation bar is `.systemGray6`.
     path = "iOSClient/More/NCMoreNavigationController.swift"
     text = upstream(path).decode()
     text = replace(text, "setNavigationBarAppearance(backgroundColor: .systemGray6)", f"setNavigationBarAppearance(backgroundColor: {background})", path)
@@ -571,6 +622,8 @@ def brand_screens() -> None:
     # The foot of Settings, where the app says what it is: the wordmark above the notice.
     path = "iOSClient/Settings/Settings/NCSettingsView.swift"
     text = upstream(path).decode()
+    # Its Form on the canvas, as the other screens of Settings (see above).
+    text = replace(text, " Form {\n", " ImaginaForm {\n", path)
     text = replace(
         text,
         "                Text(model.footerApp + model.footerServer + model.footerSlogan)\n                    .font(.footnote)\n",

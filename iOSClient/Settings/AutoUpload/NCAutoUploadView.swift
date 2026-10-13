@@ -129,7 +129,7 @@ struct NCAutoUploadView: View {
 
     @ViewBuilder
     var autoUploadOnView: some View {
-        Form {
+        ImaginaForm {
             if let otherAutoUploadAccountName {
                 Section {
                     Label(

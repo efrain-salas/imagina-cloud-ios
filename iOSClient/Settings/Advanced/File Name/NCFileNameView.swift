@@ -8,7 +8,7 @@ struct NCFileNameView: View {
     @ObservedObject var model: NCFileNameModel
 
     var body: some View {
-        Form {
+        ImaginaForm {
             // Specify Filename
             Section(header: Text(NSLocalizedString("_mode_filename_", comment: "")).font(.headline)) {
                 Toggle(NSLocalizedString("_maintain_original_filename_", comment: ""), isOn: $model.maintainFilenameOriginal)

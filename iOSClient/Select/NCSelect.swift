@@ -73,8 +73,8 @@ class NCSelect: UIViewController, UIGestureRecognizerDelegate, UIAdaptivePresent
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .systemBackground
-        collectionView.backgroundColor = .systemBackground
+        view.backgroundColor = NCBrandColor.shared.customerBackground
+        collectionView.backgroundColor = NCBrandColor.shared.customerBackground
         collectionView.hideTopScrollEdgeEffect()
 
         selectCommandViewSelect?.separatorView.backgroundColor = .separator
@@ -90,7 +90,7 @@ class NCSelect: UIViewController, UIGestureRecognizerDelegate, UIAdaptivePresent
         // Footer
         collectionView.register(UINib(nibName: "NCSectionFooter", bundle: nil), forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "sectionFooter")
         collectionView.alwaysBounceVertical = true
-        collectionView.backgroundColor = .systemBackground
+        collectionView.backgroundColor = NCBrandColor.shared.customerBackground
 
         buttonCancel.title = nil
         buttonCancel.image = UIImage(systemName: "xmark")

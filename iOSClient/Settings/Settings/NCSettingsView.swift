@@ -35,7 +35,7 @@ struct NCSettingsView: View {
     }
 
     var body: some View {
-        Form {
+        ImaginaForm {
             // `Privacy` Section
             Section(content: {
                 Button(action: {

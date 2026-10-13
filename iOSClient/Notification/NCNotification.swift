@@ -30,14 +30,14 @@ class NCNotification: UITableViewController, NCNotificationCellDelegate {
         super.viewDidLoad()
 
         title = NSLocalizedString("_notifications_", comment: "")
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = NCBrandColor.shared.customerBackground
 
         navigationController?.setNavigationBarAppearance()
 
         tableView.tableFooterView = UIView()
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 50.0
-        tableView.backgroundColor = .systemBackground
+        tableView.backgroundColor = NCBrandColor.shared.customerBackground
         tableView.hideTopScrollEdgeEffect()
 
         refreshControl?.action(for: .valueChanged) { _ in
