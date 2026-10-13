@@ -70,7 +70,7 @@ final class NCBrandOptions: @unchecked Sendable {
     var linkLoginHost: String = "https://cloud.imagina.build"
     var linkloginPreferredProviders: String = "https://cloud.imagina.build"
     var webLoginAutenticationProtocol: String = "nc://"                                        // example "abc://"
-    var privacy: String = "https://imagina.build"
+    var privacy: String = "https://imagina.build/privacy"
     var sourceCode: String = "https://github.com/efrain-salas/imagina-cloud-ios"
     var mobileconfig: String = "/remote.php/dav/provisioning/apple-provisioning.mobileconfig"
     var appStoreUrl: String = "https://imagina.build"

@@ -85,6 +85,11 @@ enum ImaginaText {
         Locale.preferredLanguages.first?.hasPrefix("es") ?? false
     }
 
+    /// What the texts call this device: the app runs on iPhone and iPad.
+    static var deviceName: String {
+        UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+    }
+
     static var signIn: String { isSpanish ? "Entrar con Imagina" : "Sign in with Imagina" }
     static var signInHint: String {
         isSpanish ? "Con tu móvil y un código por SMS." : "With your mobile number and a code by SMS."
@@ -109,11 +114,11 @@ enum ImaginaText {
     }
     static var revoked: String {
         isSpanish
-            ? "Imagina ha desconectado este iPhone. Vuelve a entrar con Imagina para seguir usando la app."
-            : "Imagina has disconnected this iPhone. Sign in with Imagina again to keep using the app."
+            ? "Imagina ha desconectado este \(deviceName). Vuelve a entrar con Imagina para seguir usando la app."
+            : "Imagina has disconnected this \(deviceName). Sign in with Imagina again to keep using the app."
     }
 
-    static var mailSetup: String { isSpanish ? "Configurar el correo de este iPhone" : "Set up mail on this iPhone" }
+    static var mailSetup: String { isSpanish ? "Configurar el correo de este \(deviceName)" : "Set up mail on this \(deviceName)" }
     static var mailSetupMenu: String { isSpanish ? "Configurar el correo" : "Set up mail" }
     /// The row's label when the mailboxes changed since the profile was installed.
     static var mailUpdateMenu: String { isSpanish ? "Actualizar el correo" : "Update mail" }
@@ -121,8 +126,8 @@ enum ImaginaText {
     static var mailSetupFailedTitle: String { isSpanish ? "No se ha podido preparar el correo" : "Could not prepare the mail setup" }
     static var mailSetupSteps: String {
         isSpanish
-            ? "Safari descargará un perfil con tu correo de Imagina. Después:\n\n1. Pulsa «Permitir».\n2. Abre Ajustes y toca «Perfil descargado».\n3. Pulsa «Instalar» y escribe el código de tu iPhone.\n\nTu correo aparecerá en la app Mail."
-            : "Safari will download a profile with your Imagina mail. Then:\n\n1. Tap «Allow».\n2. Open Settings and tap «Profile Downloaded».\n3. Tap «Install» and enter your iPhone passcode.\n\nYour mail will show up in the Mail app."
+            ? "Safari descargará un perfil con tu correo de Imagina. Después:\n\n1. Pulsa «Permitir».\n2. Abre Ajustes y toca «Perfil descargado».\n3. Pulsa «Instalar» y escribe el código de tu \(deviceName).\n\nTu correo aparecerá en la app Mail."
+            : "Safari will download a profile with your Imagina mail. Then:\n\n1. Tap «Allow».\n2. Open Settings and tap «Profile Downloaded».\n3. Tap «Install» and enter your \(deviceName) passcode.\n\nYour mail will show up in the Mail app."
     }
     static var mailSetupDownload: String { isSpanish ? "Descargar el perfil" : "Download the profile" }
 }

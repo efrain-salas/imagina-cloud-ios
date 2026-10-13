@@ -21,7 +21,7 @@ enum ImaginaDevice {
         }
 
         let name = UIDevice.current.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let created = try await ImaginaApi.shared.createDevice(name: name.isEmpty ? "iPhone" : String(name.prefix(80)))
+        let created = try await ImaginaApi.shared.createDevice(name: name.isEmpty ? ImaginaText.deviceName : String(name.prefix(80)))
         ImaginaStore.update { session in
             session.deviceId = created.deviceId
             session.mailProfile = .notInstalled

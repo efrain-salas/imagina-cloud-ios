@@ -1,8 +1,8 @@
-NSCameraUsageDescription = "Camera access is required to scan documents and make photo and video.";
-NSFaceIDUsageDescription = "Face ID is required to authenticate using face recognition.";
-NSLocationAlwaysUsageDescription = "The app uses your location to automatically trigger file uploads when you move between areas.";
-NSPhotoLibraryUsageDescription = "Photo library access is required to upload your photos and videos to your cloud.";
-NSPhotoLibraryAddUsageDescription = "Photo library access is required to upload your photos and videos to your cloud.";
-NSMicrophoneUsageDescription = "Microphone access is required to create voice notes.";
-NSLocationWhenInUseUsageDescription = "This app uses your location to detect movement and automatically upload files. It does not use GPS and does not store your location.";
-NSLocationAlwaysAndWhenInUseUsageDescription = "This app needs access to your location even in the background to automatically start uploading files when significant movement is detected. GPS is not used.";
+NSCameraUsageDescription = "Imagina Cloud uses the camera to scan documents and to take photos or videos that you upload to your cloud.";
+NSFaceIDUsageDescription = "Imagina Cloud uses Face ID to unlock the app with your face if you turn on the passcode.";
+NSLocationAlwaysUsageDescription = "Imagina Cloud uses your location, in the background too, only to wake up the automatic upload of your photos when you move a long way. It does not use GPS and your location is not sent anywhere.";
+NSPhotoLibraryUsageDescription = "Imagina Cloud accesses your photos and videos so that you can choose which ones to upload to your cloud and, if you turn it on, upload them automatically.";
+NSPhotoLibraryAddUsageDescription = "Imagina Cloud saves to your photos the pictures and videos you download from your cloud when you ask it to.";
+NSMicrophoneUsageDescription = "Imagina Cloud uses the microphone to record voice notes and the sound of the videos you take, and to save them to your cloud.";
+NSLocationWhenInUseUsageDescription = "Imagina Cloud uses your location only to know when you move a long way and wake up the automatic upload of your photos. It does not use GPS and your location is not sent anywhere.";
+NSLocationAlwaysAndWhenInUseUsageDescription = "Imagina Cloud uses your location, in the background too, only to wake up the automatic upload of your photos when you move a long way. It does not use GPS and your location is not sent anywhere.";

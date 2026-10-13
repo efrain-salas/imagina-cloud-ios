@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parent.parent
 IMAGINA = ROOT / "imagina"
@@ -45,6 +46,7 @@ P, LOCAL_OVERRIDES = read_parameters()
 TAG = P["NEXTCLOUD_IOS_TAG"]
 APP_ID = P["IMAGINA_APPLICATION_ID"]
 APP_NAME = P["IMAGINA_APP_NAME"]
+COPYRIGHT = P["IMAGINA_COPYRIGHT"]
 SCHEME = P["IMAGINA_URL_SCHEME"]
 TEAM = P["IMAGINA_DEVELOPMENT_TEAM"]
 GROUP = f"group.{APP_ID}"
@@ -68,6 +70,24 @@ def replace(text: str, old: str, new: str, path: str, count: int | None = 1) -> 
         expected = "at least once" if count is None else f"{count} time(s)"
         raise BrandingError(f"{path}: expected {old!r} {expected}, found {found}")
     return text.replace(old, new)
+
+
+def drop_object(text: str, object_id: str, path: str) -> str:
+    """Removes the definition of a project object that spans several lines (from `ID /* name */ = {` to its closing `};`)."""
+    pattern = re.compile(rf"\t\t{object_id} /\*[^\n]*\*/ = \{{\n.*?\n\t\t\}};\n", re.DOTALL)
+    if len(pattern.findall(text)) != 1:
+        raise BrandingError(f"{path}: expected the definition of the object {object_id} once")
+    return pattern.sub("", text)
+
+
+def drop_lines(text: str, object_id: str, count: int, path: str) -> str:
+    """Removes the single lines of the project that start with an object's id: its one-line definition (a build file or a
+    file reference) and its entry in the lists that name it."""
+    pattern = re.compile(rf"^\t+{object_id} /\*[^\n]*(?:,|\}};)\n", re.MULTILINE)
+    found = len(pattern.findall(text))
+    if found != count:
+        raise BrandingError(f"{path}: expected {count} line(s) for the object {object_id}, found {found}")
+    return pattern.sub("", text)
 
 
 def set_line(text: str, pattern: str, value: str, path: str) -> str:
@@ -141,6 +161,34 @@ enum NCBrandFont {
     }
 }
 """
+
+# The usage descriptions iOS shows in its permission prompts, in Imagina's voice: they name the app and say plainly what each
+# permission is for. Spanish is Spain's, tuteo; English is en-GB. The keys are those of Info.plist; the other languages keep
+# Nextcloud's translations (the English text is also the Info.plist fallback).
+_LOCATION_ES = "No usa el GPS y la ubicación no se envía a ningún sitio."
+_LOCATION_EN = "It does not use GPS and your location is not sent anywhere."
+PERMISSION_TEXTS = {
+    "es": {
+        "NSCameraUsageDescription": "Imagina Cloud usa la cámara para escanear documentos y hacer fotos o vídeos que subes a tu nube.",
+        "NSMicrophoneUsageDescription": "Imagina Cloud usa el micrófono para grabar notas de voz y el sonido de los vídeos que haces, y guardarlos en tu nube.",
+        "NSPhotoLibraryUsageDescription": "Imagina Cloud accede a tus fotos y vídeos para que elijas cuáles subir a tu nube y, si lo activas, subirlos automáticamente.",
+        "NSPhotoLibraryAddUsageDescription": "Imagina Cloud guarda en tus fotos las imágenes y los vídeos que descargas de tu nube cuando se lo pides.",
+        "NSFaceIDUsageDescription": "Imagina Cloud usa Face ID para desbloquear la app con tu cara si activas el código de acceso.",
+        "NSLocationWhenInUseUsageDescription": f"Imagina Cloud usa tu ubicación solo para saber cuándo te mueves mucho y despertar la subida automática de tus fotos. {_LOCATION_ES}",
+        "NSLocationAlwaysUsageDescription": f"Imagina Cloud usa tu ubicación, también en segundo plano, solo para despertar la subida automática de tus fotos cuando te mueves mucho. {_LOCATION_ES}",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": f"Imagina Cloud usa tu ubicación, también en segundo plano, solo para despertar la subida automática de tus fotos cuando te mueves mucho. {_LOCATION_ES}",
+    },
+    "en": {
+        "NSCameraUsageDescription": "Imagina Cloud uses the camera to scan documents and to take photos or videos that you upload to your cloud.",
+        "NSMicrophoneUsageDescription": "Imagina Cloud uses the microphone to record voice notes and the sound of the videos you take, and to save them to your cloud.",
+        "NSPhotoLibraryUsageDescription": "Imagina Cloud accesses your photos and videos so that you can choose which ones to upload to your cloud and, if you turn it on, upload them automatically.",
+        "NSPhotoLibraryAddUsageDescription": "Imagina Cloud saves to your photos the pictures and videos you download from your cloud when you ask it to.",
+        "NSFaceIDUsageDescription": "Imagina Cloud uses Face ID to unlock the app with your face if you turn on the passcode.",
+        "NSLocationWhenInUseUsageDescription": f"Imagina Cloud uses your location only to know when you move a long way and wake up the automatic upload of your photos. {_LOCATION_EN}",
+        "NSLocationAlwaysUsageDescription": f"Imagina Cloud uses your location, in the background too, only to wake up the automatic upload of your photos when you move a long way. {_LOCATION_EN}",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": f"Imagina Cloud uses your location, in the background too, only to wake up the automatic upload of your photos when you move a long way. {_LOCATION_EN}",
+    },
+}
 
 # The wordmark («imagina /cloud») is 240 pt wide in the app, whatever the SVG of the brand kit says: it only has a viewBox.
 WORDMARK_WIDTH = 240.0
@@ -227,19 +275,46 @@ def brand_project() -> None:
         f"\t\t\t);\n\t\t\tfileSystemSynchronizedGroups = (\n\t\t\t\t{group},\n\t\t\t);\n\t\t\tname = Nextcloud;\n\t\t\tpackageProductDependencies = (\n",
         path,
     )
-    # No crash reports: the Crashlytics phase would upload the app's symbols to Firebase.
+
+    # NSHumanReadableCopyright of the targets whose Info.plist Xcode generates (Widget, WidgetDashboardIntentHandler, Action
+    # Assistant, BackgroundUploadExtension and the test bundles; the others carry it in their Info.plist: see
+    # brand_entitlements_and_plists). It is set at project level, in the Debug and the Release configuration.
     text = replace(
         text,
-        '\\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\\"',
-        "# Imagina (IMAGINA.md): no crash reports to Firebase.\\nexit 0",
+        'INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Nextcloud. All rights reserved.";',
+        f"INFOPLIST_KEY_NSHumanReadableCopyright = {swift_string(COPYRIGHT)};",
         path,
+        count=2,
     )
-    write(path, text)
 
-    # Nextcloud's project copies its Firebase file (kept out of git) into the app: a placeholder, never used.
-    firebase = ROOT / "GoogleService-Info.plist"
-    if not firebase.exists():
-        shutil.copyfile(IMAGINA / "GoogleService-Info.placeholder.plist", firebase)
+    # No Action Assistant in the app: it only hands selected text to the Nextcloud Assistant, which Imagina's server does not
+    # have (app_api is off), so App Review would find an action that does nothing. The extension is neither embedded in the
+    # app nor a dependency of its target, so no archive carries it. Its own target stays in the project, unbuilt by the app's
+    # scheme, so a Nextcloud update that touches it still merges.
+    text = drop_lines(text, "F7C55C882FB5AEF7004A974F", 2, path)  # Action Assistant.appex in Embed Foundation Extensions
+    text = drop_object(text, "F7C55C872FB5AEF7004A974F", path)  # the app target's dependency on it
+    text = drop_lines(text, "F7C55C872FB5AEF7004A974F", 1, path)
+    text = drop_object(text, "F7C55C862FB5AEF7004A974F", path)  # the proxy of that dependency
+
+    # No Firebase: the app sends no crash reports (disable_crash_service) and FirebaseApp.configure() is never called, so the
+    # SDK was only dead weight in the binary (Core, Installations, Crashlytics, Sessions, GoogleDataTransport...) and its
+    # resource bundles. Out go the package, its three product links (Crashlytics in the app; Database in the UI and
+    # integration test bundles), the Crashlytics dSYM phase, and the GoogleService-Info.plist Nextcloud's project copies into
+    # the app (kept out of git). The two Swift files that import it are edited by hook_app_delegate and brand_screens.
+    for build_file in ("F3391B082B4C52C5001C0C4B", "F3391B162B4C52F6001C0C4B", "F70B86752642CE3B00ED5349"):  # Database, Database, Crashlytics
+        text = drop_lines(text, build_file, 2, path)
+    for product in ("F3391B072B4C52C5001C0C4B", "F3391B152B4C52F6001C0C4B", "F70B86742642CE3B00ED5349"):  # Database, Database, Crashlytics
+        text = drop_object(text, product, path)
+        text = drop_lines(text, product, 1, path)
+    text = drop_object(text, "F70B86732642CE3B00ED5349", path)  # the firebase-ios-sdk package
+    text = drop_lines(text, "F70B86732642CE3B00ED5349", 1, path)
+    text = drop_object(text, "F76995F02F99EF6C00291FA7", path)  # Crashlytics dSYM Upload
+    text = drop_lines(text, "F76995F02F99EF6C00291FA7", 1, path)
+    text = drop_lines(text, "F7B8B83025681C3400967775", 2, path)  # GoogleService-Info.plist in Resources
+    text = drop_lines(text, "F7B8B82F25681C3400967775", 2, path)  # GoogleService-Info.plist
+    if re.search(r"firebase|crashlytics|GoogleService", text, re.IGNORECASE):
+        raise BrandingError(f"{path}: something of Firebase is left in the project")
+    write(path, text)
 
     # Shared schemes name the extensions' bundle identifiers.
     for scheme in ("Share", "File Provider Extension", "BackgroundUploadExtension"):
@@ -248,6 +323,11 @@ def brand_project() -> None:
         if "it.twsweb.Nextcloud" in scheme_text:
             scheme_text = scheme_text.replace("it.twsweb.Nextcloud.", f"{APP_ID}.").replace("it.twsweb.Nextcloud", APP_ID)
         write(scheme_path, scheme_text)
+
+
+def copyright_entry() -> str:
+    """The NSHumanReadableCopyright entry of an Info.plist, with Imagina's text (see IMAGINA_COPYRIGHT)."""
+    return f"\t<key>NSHumanReadableCopyright</key>\n\t<string>{escape(COPYRIGHT)}</string>\n"
 
 
 def brand_entitlements_and_plists() -> None:
@@ -282,6 +362,14 @@ def brand_entitlements_and_plists() -> None:
     if own_code and not re.fullmatch(r"[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", own_code):
         raise BrandingError("IMAGINA_ENCRYPTION_COMPLIANCE_CODE must be a UUID, as App Store Connect gives it")
     text = replace(text, nextcloud_code, f"\t<key>ITSEncryptionExportComplianceCode</key>\n\t<string>{own_code}</string>\n" if own_code else "", path)
+    # The app and its extensions say «© Imagina», not Nextcloud (the generated Info.plists get it from the project's build settings).
+    text = replace(text, "\t<key>NSAppTransportSecurity</key>\n", copyright_entry() + "\t<key>NSAppTransportSecurity</key>\n", path)
+    # The usage descriptions of the permission prompts, in English as the fallback of every language without its own
+    # (brand_permission_texts writes the localised ones).
+    for key, value in PERMISSION_TEXTS["en"].items():
+        text, found = re.subn(rf"(<key>{key}</key>\n\t<string>)[^<]*(</string>)", lambda match: match.group(1) + escape(value) + match.group(2), text)
+        if found != 1:
+            raise BrandingError(f"{path}: expected one {key}, found {found}")
     write(path, text)
 
     # Names in the Files app and the share sheet.
@@ -289,7 +377,18 @@ def brand_entitlements_and_plists() -> None:
         text = upstream(path).decode()
         text = replace(text, "<key>CFBundleDisplayName</key>\n\t<string>Nextcloud</string>", f"<key>CFBundleDisplayName</key>\n\t<string>{APP_NAME}</string>", path)
         text = text.replace("group.it.twsweb.Crypto-Cloud", GROUP)
+        if path.endswith("File_Provider_Extension_UI.plist"):
+            # It already carries an empty NSHumanReadableCopyright.
+            text = replace(text, "<key>NSHumanReadableCopyright</key>\n\t<string></string>\n", copyright_entry().lstrip("\t"), path)
+        else:
+            text = replace(text, "\t<key>NSAppTransportSecurity</key>\n", copyright_entry() + "\t<key>NSAppTransportSecurity</key>\n", path)
         write(path, text)
+
+    # The notification service extension (its Info.plist has no copyright yet).
+    path = "Brand/Notification_Service_Extension.plist"
+    text = upstream(path).decode()
+    text = replace(text, "\t<key>NSExtension</key>\n", copyright_entry() + "\t<key>NSExtension</key>\n", path)
+    write(path, text)
 
     path = "Brand/Action_Assistant.plist"
     text = upstream(path).decode()
@@ -488,9 +587,18 @@ def hook_app_delegate() -> None:
     """The notices of new mail (imagina/Sources/ImaginaPush.swift and ImaginaMailNotice.swift, C12.6): the app's APNs token
     also goes to Imagina's devices API, and a tap on Imagina's notice opens the message in Mail before Nextcloud looks at
     the response. Nextcloud's own notifications are not touched. And Imagina's look (ImaginaTheme: the typeface, the canvas and
-    the tab bar's titles), installed when the app starts."""
+    the tab bar's titles), installed when the app starts. And no Firebase: its import and its configuration go."""
     path = "iOSClient/AppDelegate.swift"
     text = upstream(path).decode()
+
+    # No Firebase (see brand_project): the crash reporting it served is off in this app, and the package is not linked.
+    text = replace(text, "import Firebase\n", "", path)
+    text = replace(
+        text,
+        "        if !NCPreferences().disableCrashservice, !NCBrandOptions.shared.disable_crash_service {\n            FirebaseApp.configure()\n        }\n\n",
+        "        // Imagina (IMAGINA.md): no Firebase and no crash reports.\n\n",
+        path,
+    )
 
     anchor = "    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {\n"
     text = replace(
@@ -523,6 +631,29 @@ def hook_app_delegate() -> None:
         + "        if ImaginaMailNotice.handle(response) {\n"
         + "            completionHandler()\n"
         + "            return\n"
+        + "        }\n"
+        + "\n",
+        path,
+    )
+    write(path, text)
+
+
+def hook_photos_prompt() -> None:
+    """No Photos prompt before the person uses a photo feature. On iOS 27 the app calls `disableIfIdle` every time it becomes
+    active and that touches PhotoKit, which makes iOS ask for the photo library on the very first launch, before sign-in and
+    out of context. It now does nothing until access to Photos has already been given (the picker, auto upload and the other
+    photo features ask for it themselves, when the person uses them)."""
+    path = "BackgroundUploadExtension/NCBackgroundUploadExtensionManager.swift"
+    text = upstream(path).decode()
+    anchor = "    func disableIfIdle() async -> Bool {\n"
+    text = replace(
+        text,
+        anchor,
+        anchor
+        + "        // Imagina (IMAGINA.md): PhotoKit is not touched (and Photos is not asked for) until access has been given.\n"
+        + "        let photosAccess = PHPhotoLibrary.authorizationStatus(for: .readWrite)\n"
+        + "        guard photosAccess == .authorized || photosAccess == .limited else {\n"
+        + "            return true\n"
         + "        }\n"
         + "\n",
         path,
@@ -686,6 +817,9 @@ def brand_screens() -> None:
     # The foot of Settings, where the app says what it is: the wordmark above the notice.
     path = "iOSClient/Settings/Settings/NCSettingsView.swift"
     text = upstream(path).decode()
+    # No Firebase (see brand_project): its Crashlytics log in the Debug section's test crash goes.
+    text = replace(text, "import FirebaseCrashlytics\n", "", path)
+    text = replace(text, '                    Crashlytics.crashlytics().log("Test crash triggered")\n', "", path)
     # Its Form on the canvas, as the other screens of Settings (see above).
     text = replace(text, " Form {\n", " ImaginaForm {\n", path)
     text = replace(
@@ -829,6 +963,21 @@ def brand_texts() -> None:
         strings.write_bytes("\n".join(lines).encode(encoding))
 
 
+def brand_permission_texts() -> None:
+    """The usage descriptions of the permission prompts (camera, microphone, Photos, Face ID, location) name Imagina Cloud and
+    say what each is for, in Spanish (Spain) and English (en and en-GB); the other languages keep Nextcloud's text."""
+    for folder, texts in (("es", PERMISSION_TEXTS["es"]), ("en", PERMISSION_TEXTS["en"]), ("en-GB", PERMISSION_TEXTS["en"])):
+        path = f"iOSClient/Supporting Files/{folder}.lproj/InfoPlist.strings"
+        raw = upstream(path)
+        encoding = "utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8"
+        text = raw.decode(encoding)
+        for key, value in texts.items():
+            text, found = re.subn(rf'^({key}\s*=\s*)"[^"\n]*"', lambda match: match.group(1) + json.dumps(value, ensure_ascii=False), text, flags=re.MULTILINE)
+            if found != 1:
+                raise BrandingError(f"{path}: expected one {key}, found {found}")
+        (ROOT / path).write_bytes(text.encode(encoding))
+
+
 def main() -> int:
     try:
         brand_project()
@@ -838,12 +987,14 @@ def main() -> int:
         hook_menu()
         hook_account_removal()
         hook_app_delegate()
+        hook_photos_prompt()
         brand_screens()
         brand_licences()
         brand_notifications()
         write_parameters()
         brand_images()
         brand_texts()
+        brand_permission_texts()
     except BrandingError as error:
         print(f"apply-branding: {error}", file=sys.stderr)
         return 1

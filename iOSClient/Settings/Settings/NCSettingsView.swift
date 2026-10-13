@@ -7,7 +7,6 @@ import SwiftUI
 import UIKit
 import Combine
 import NextcloudKit
-import FirebaseCrashlytics
 
 /// Settings view for Nextcloud
 @MainActor
@@ -281,7 +280,6 @@ struct NCSettingsView: View {
                 .disabled(isExportingDatabase)
 
                 Button(action: {
-                    Crashlytics.crashlytics().log("Test crash triggered")
                     fatalError("🔥 Crash test")
                 }, label: {
                     HStack {

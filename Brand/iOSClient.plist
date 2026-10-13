@@ -55,27 +55,29 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2026 Imagina. Basada en Nextcloud.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Camera access is required to scan documents and take photos in this app.</string>
+	<string>Imagina Cloud uses the camera to scan documents and to take photos or videos that you upload to your cloud.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Face ID is required to authenticate using face recognition.</string>
+	<string>Imagina Cloud uses Face ID to unlock the app with your face if you turn on the passcode.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app needs access to your location even in the background to automatically start uploading files when significant movement is detected. GPS is not used.</string>
+	<string>Imagina Cloud uses your location, in the background too, only to wake up the automatic upload of your photos when you move a long way. It does not use GPS and your location is not sent anywhere.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>The app uses your location to automatically trigger file uploads when you move between areas.</string>
+	<string>Imagina Cloud uses your location, in the background too, only to wake up the automatic upload of your photos when you move a long way. It does not use GPS and your location is not sent anywhere.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app uses your location to detect movement and automatically upload files. It does not use GPS and does not store your location.</string>
+	<string>Imagina Cloud uses your location only to know when you move a long way and wake up the automatic upload of your photos. It does not use GPS and your location is not sent anywhere.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Microphone access is required to create voice notes.</string>
+	<string>Imagina Cloud uses the microphone to record voice notes and the sound of the videos you take, and to save them to your cloud.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>This lets you upload and save photos using this app. Photos can then be browsed and viewed via the Media tab.</string>
+	<string>Imagina Cloud saves to your photos the pictures and videos you download from your cloud when you ask it to.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This lets you upload and save photos using this app. Photos can then be browsed and viewed via the Media tab.</string>
+	<string>Imagina Cloud accesses your photos and videos so that you can choose which ones to upload to your cloud and, if you turn it on, upload them automatically.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>AccountIntent</string>
