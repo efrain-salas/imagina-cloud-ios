@@ -1,0 +1,15 @@
+Imagina Cloud lleva a tu iPhone y tu iPad los ficheros de tu empresa: las carpetas de tu equipo, tus documentos y tus fotos, al día y a salvo en la nube de Imagina.
+
+Con Imagina Cloud puedes:
+• Abrir los ficheros de tu empresa y las carpetas que compartes con tu equipo.
+• Subir fotos, vídeos y documentos, y escanear papeles con la cámara.
+• Activar la subida automática de tus fotos, para no perder ninguna.
+• Guardar ficheros sin conexión y tenerlos a mano aunque no haya cobertura.
+• Compartir ficheros con las personas de tu equipo.
+• Configurar el correo de tu empresa en la app Mail del iPhone con un enlace, sin escribir servidores ni contraseñas.
+
+Entras con tu número de móvil y un código que te llega por SMS: sin contraseñas que recordar.
+
+Necesitas una cuenta de Imagina Cloud, que crea tu empresa desde Imagina. Si tu empresa todavía no tiene Imagina Cloud, cuéntanoslo en imagina.build.
+
+Imagina Cloud es una versión modificada de la app de Nextcloud, hecha por Imagina. No es la app oficial de Nextcloud ni está respaldada por Nextcloud GmbH. Su código está publicado en github.com/efrain-salas/imagina-cloud-ios.
