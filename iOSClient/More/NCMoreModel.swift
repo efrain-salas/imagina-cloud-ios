@@ -184,16 +184,19 @@ final class NCMoreModel: ObservableObject {
         quotaExternalSiteTitle = ""
         quotaExternalSiteUrl = nil
 
-        functionItems.append(
-            Item(
-                titleKey: "_activity_",
-                image: "bolt.fill",
-                destination: .storyboard(
-                    name: "NCActivity",
-                    presentation: .push
+        // Imagina (IMAGINA.md): only when the server has the activity app.
+        if !capabilities.activity.isEmpty {
+            functionItems.append(
+                Item(
+                    titleKey: "_activity_",
+                    image: "bolt.fill",
+                    destination: .storyboard(
+                        name: "NCActivity",
+                        presentation: .push
+                    )
                 )
             )
-        )
+        }
 
         functionItems.append(
             Item(

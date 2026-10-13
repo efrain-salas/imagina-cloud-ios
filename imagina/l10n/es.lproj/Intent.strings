@@ -1,0 +1,19 @@
+/*
+  Imagina Cloud (IMAGINA.md): the configuration screen of the widgets in Spanish (Spain), «tú». Nextcloud's es.lproj/Intent.strings
+  is in English. Same rules as Localizable.strings: the ${placeholders} stay exactly as they are.
+*/
+
+"13zjVT" = "Cuenta";
+"296XDb" = "Hay ${count} opciones que coinciden con «${accounts}».";
+"Am6y6p" = "Solo para confirmar: ¿querías «${applications}»?";
+"CAIVXf" = "Aplicaciones";
+"DN8Bxl" = "Cuenta";
+"NO1rJU" = "Panel";
+"ObH8NN" = "Hay ${count} opciones que coinciden con «${accounts}».";
+"TVGjNQ" = "Solo para confirmar: ¿querías «${accounts}»?";
+"V3exc2" = "Cuenta";
+"VfbA9C" = "Cuenta";
+"XjFf0X" = "Hay ${count} opciones que coinciden con «${applications}».";
+"ZgvlYN" = "Widget del panel";
+"q5lvSu" = "Solo para confirmar: ¿querías «${accounts}»?";
+"tAlZ1R" = "Cuentas";

@@ -31,9 +31,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>%d file in queue</string>
+			<string>%d archivo en cola</string>
+			<key>many</key>
+			<string>%d archivos en cola</string>
 			<key>other</key>
-			<string>%d files in queue</string>
+			<string>%d archivos en cola</string>
 		</dict>
 	</dict>
 	<key>_focused_auto_upload_photos_to_back_up_</key>
@@ -47,9 +49,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>You have %d item to back up</string>
+			<string>Tienes %d elemento para copiar</string>
+			<key>many</key>
+			<string>Tienes %d elementos para copiar</string>
 			<key>other</key>
-			<string>You have %d items to back up</string>
+			<string>Tienes %d elementos para copiar</string>
 		</dict>
 	</dict>
 	<key>_focused_auto_upload_failed_</key>
@@ -63,9 +67,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>%d failed</string>
+			<string>%d fallido</string>
+			<key>many</key>
+			<string>%d fallidos</string>
 			<key>other</key>
-			<string>%d failed</string>
+			<string>%d fallidos</string>
 		</dict>
 	</dict>
 	<key>_albums_photos_count_</key>
@@ -79,9 +85,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>%d photo</string>
+			<string>%d foto</string>
+			<key>many</key>
+			<string>%d fotos</string>
 			<key>other</key>
-			<string>%d photos</string>
+			<string>%d fotos</string>
 		</dict>
 	</dict>
 	<key>_albums_list_photos_and_videos_count_</key>
@@ -95,9 +103,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>%d photo or video</string>
+			<string>%d foto o vídeo</string>
+			<key>many</key>
+			<string>%d fotos y vídeos</string>
 			<key>other</key>
-			<string>%d photos and videos</string>
+			<string>%d fotos y vídeos</string>
 		</dict>
 	</dict>
 </dict>

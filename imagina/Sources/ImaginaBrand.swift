@@ -35,9 +35,16 @@ enum ImaginaColor {
 /// own code (the font itself comes from `NCBrandFont`).
 @MainActor
 enum ImaginaTheme {
-    /// Called when the app starts (`AppDelegate`): the titles of the tab bar and Instrument Sans for every system font
-    /// (`ImaginaFont`).
+    /// Called when the app starts (`AppDelegate`): the accent as the tint of every window, the titles of the tab bar and
+    /// Instrument Sans for every system font (`ImaginaFont`).
     static func install() {
+        // Nextcloud tints the iPhone's bottom tab bar itself (`tabBar.tintColor`), but the iPad's floating top bar, the
+        // buttons of alerts and sheets and the SwiftUI controls take the window's tint, which is the system blue. The accent
+        // is adaptive (`#0F766E`; `#2DD4BF` in the dark theme). It is set on each window as it becomes visible:
+        // `UIWindow.appearance().tintColor` does not reach the iPad's tab bar.
+        NotificationCenter.default.addObserver(forName: UIWindow.didBecomeVisibleNotification, object: nil, queue: .main) { notification in
+            (notification.object as? UIWindow)?.tintColor = ImaginaColor.accent
+        }
         let attributes: [NSAttributedString.Key: Any] = [.font: NCBrandFont.font(size: 10, weight: .medium)]
         for state in [UIControl.State.normal, .selected, .highlighted] {
             UITabBarItem.appearance().setTitleTextAttributes(attributes, for: state)
@@ -127,9 +134,22 @@ enum ImaginaText {
     static var mailSetupSteps: String {
         isSpanish
             ? "Safari descargará un perfil con tu correo de Imagina. Después:\n\n1. Pulsa «Permitir».\n2. Abre Ajustes y toca «Perfil descargado».\n3. Pulsa «Instalar» y escribe el código de tu \(deviceName).\n\nTu correo aparecerá en la app Mail."
-            : "Safari will download a profile with your Imagina mail. Then:\n\n1. Tap «Allow».\n2. Open Settings and tap «Profile Downloaded».\n3. Tap «Install» and enter your \(deviceName) passcode.\n\nYour mail will show up in the Mail app."
+            : "Safari will download a profile with your Imagina mail. Then:\n\n1. Tap “Allow”.\n2. Open Settings and tap “Profile Downloaded”.\n3. Tap “Install” and enter your \(deviceName) passcode.\n\nYour mail will show up in the Mail app."
     }
     static var mailSetupDownload: String { isSpanish ? "Descargar el perfil" : "Download the profile" }
+
+    /// The foot of Settings (`NCSettingsModel`): what the app is and that it is not Nextcloud's own.
+    static func appNotice(version: String) -> String {
+        let name = NCBrandOptions.shared.brand
+        return isSpanish
+            ? "\(name) para iOS \(version), una versión modificada de Nextcloud para iOS (no es la app oficial)"
+            : "\(name) for iOS \(version), a modified version of Nextcloud for iOS (not the official app)"
+    }
+
+    /// The foot of Settings: the version of the server.
+    static func serverNotice(version: String) -> String {
+        isSpanish ? "Servidor Nextcloud \(version)" : "Nextcloud Server \(version)"
+    }
 }
 
 extension ImaginaFailure {

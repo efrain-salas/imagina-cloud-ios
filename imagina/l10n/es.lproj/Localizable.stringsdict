@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Imagina Cloud (IMAGINA.md): the plural forms that Nextcloud's es.lproj/Localizable.stringsdict leaves in English, in
+  Spanish (Spain). apply-branding.py replaces, entry by entry (from its <key> to its closing </dict>), the ones written here.
+  An entry that Nextcloud's file no longer has stops the script. Same layout as Nextcloud's file, one tab per level.
+-->
+<plist version="1.0">
+<dict>
+	<key>_auto_upload_files_in_queue_</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@files@</string>
+		<key>files</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%d archivo en cola</string>
+			<key>many</key>
+			<string>%d archivos en cola</string>
+			<key>other</key>
+			<string>%d archivos en cola</string>
+		</dict>
+	</dict>
+	<key>_focused_auto_upload_photos_to_back_up_</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@photos@</string>
+		<key>photos</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>Tienes %d elemento para copiar</string>
+			<key>many</key>
+			<string>Tienes %d elementos para copiar</string>
+			<key>other</key>
+			<string>Tienes %d elementos para copiar</string>
+		</dict>
+	</dict>
+	<key>_focused_auto_upload_failed_</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@failed@</string>
+		<key>failed</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%d fallido</string>
+			<key>many</key>
+			<string>%d fallidos</string>
+			<key>other</key>
+			<string>%d fallidos</string>
+		</dict>
+	</dict>
+	<key>_albums_photos_count_</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@photos@</string>
+		<key>photos</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%d foto</string>
+			<key>many</key>
+			<string>%d fotos</string>
+			<key>other</key>
+			<string>%d fotos</string>
+		</dict>
+	</dict>
+	<key>_albums_list_photos_and_videos_count_</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@media@</string>
+		<key>media</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%d foto o vídeo</string>
+			<key>many</key>
+			<string>%d fotos y vídeos</string>
+			<key>other</key>
+			<string>%d fotos y vídeos</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

@@ -535,7 +535,8 @@ def hook_login() -> None:
 
 def hook_menu() -> None:
     """«Configurar el correo» (imagina/Sources/ImaginaMailSetup.swift) in the Menu tab, above Settings. The row appears
-    while this iPhone is a connected device; `reload` builds the Menu again when the state of the profile changes."""
+    while this iPhone is a connected device; `reload` builds the Menu again when the state of the profile changes. And the
+    «Actividad» row only where the server has the activity app."""
     path = "iOSClient/More/NCMoreModel.swift"
     text = upstream(path).decode()
     text = replace(
@@ -562,6 +563,29 @@ def hook_menu() -> None:
         "            settingsItems.append(Item(titleKey: mailSetup.title, image: mailSetup.image, destination: .imagina(mailSetup.action)))\n"
         "        }\n"
         "\n" + anchor,
+        path,
+    )
+    # «Actividad» only where the server offers the activity app: Imagina's Nextcloud does not have it (deploy/nextcloud/setup.sh
+    # turns it off), so the screen could only be empty. Nextcloud's own file details already hide their Activity tab the same way.
+    activity_row = (
+        "        functionItems.append(\n"
+        "            Item(\n"
+        "                titleKey: \"_activity_\",\n"
+        "                image: \"bolt.fill\",\n"
+        "                destination: .storyboard(\n"
+        "                    name: \"NCActivity\",\n"
+        "                    presentation: .push\n"
+        "                )\n"
+        "            )\n"
+        "        )\n"
+    )
+    text = replace(
+        text,
+        activity_row,
+        "        // Imagina (IMAGINA.md): only when the server has the activity app.\n"
+        "        if !capabilities.activity.isEmpty {\n"
+        + "".join(f"    {line}\n" for line in activity_row.splitlines())
+        + "        }\n",
         path,
     )
     write(path, text)
@@ -633,6 +657,40 @@ def hook_app_delegate() -> None:
         + "            return\n"
         + "        }\n"
         + "\n",
+        path,
+    )
+    write(path, text)
+
+
+def hook_tab_bar() -> None:
+    """The bottom tab bar of the iPhone takes the adaptive accent (`#0F766E`; `#2DD4BF` in the dark theme), the same as the iPad's
+    floating bar, which takes the window's tint (ImaginaTheme.install). Nextcloud tinted it with the server theme's colour, a
+    single colour for both themes."""
+    path = "iOSClient/Main/NCMainTabBarController.swift"
+    text = upstream(path).decode()
+    text = replace(
+        text,
+        "tabBar.tintColor = NCBrandColor.shared.getElement(account: account)",
+        "tabBar.tintColor = ImaginaColor.accent // Imagina (IMAGINA.md): the adaptive accent",
+        path,
+        count=2,
+    )
+    write(path, text)
+
+
+def hook_settings_footer() -> None:
+    """The foot of Settings says what the app is in the person's language (`ImaginaText.appNotice` and `serverNotice`), not in
+    the English of NCBrand's `textCopyrightNextcloudiOS` and `textCopyrightNextcloudServer` (which stay as they are for the
+    logs of the app and its extensions)."""
+    path = "iOSClient/Settings/Settings/NCSettingsModel.swift"
+    text = upstream(path).decode()
+    text = replace(
+        text,
+        '        footerApp = String(format: NCBrandOptions.shared.textCopyrightNextcloudiOS, NCUtility().getVersionBuild()) + "\\n\\n"\n'
+        '        footerServer = String(format: NCBrandOptions.shared.textCopyrightNextcloudServer, capabilities.serverVersion) + "\\n"\n',
+        "        // Imagina (IMAGINA.md): the notices of the foot of Settings in the person's language.\n"
+        '        footerApp = ImaginaText.appNotice(version: NCUtility().getVersionBuild()) + "\\n\\n"\n'
+        '        footerServer = ImaginaText.serverNotice(version: capabilities.serverVersion) + "\\n"\n',
         path,
     )
     write(path, text)
@@ -948,19 +1006,128 @@ def brand_images() -> None:
     )
 
 
+# Imagina's own wording of Nextcloud's strings: imagina/l10n/<language>.lproj/<table>.strings, the same `"key" = "value";`
+# format as the file it changes. Where Nextcloud keeps each table for a language folder.
+L10N = IMAGINA / "l10n"
+L10N_TABLES = {
+    "Localizable.strings": "iOSClient/Supporting Files/{lproj}/Localizable.strings",
+    "Localizable.stringsdict": "iOSClient/Supporting Files/{lproj}/Localizable.stringsdict",
+    "Intent.strings": "Widget/Intent/{lproj}/Intent.strings",
+}
+# An entry of a .stringsdict (the plural forms): from `\t<key>name</key>` to the closing `\t</dict>` of its own dict.
+STRINGSDICT_ENTRY = re.compile(r"^\t<key>(?P<key>[^<]+)</key>\n\t<dict>\n.*?\n\t</dict>\n", re.DOTALL | re.MULTILINE)
+STRINGS_ENTRY = re.compile(r'^(?P<head>\s*"(?P<key>(?:[^"\\]|\\.)*)"\s*=\s*)"(?P<value>(?:[^"\\]|\\.)*)"(?P<tail>\s*;.*)$')
+# What a translation has to keep exactly: printf specifiers (%@, %d, %1$d, %%…) and the ${placeholders} of Intent.strings.
+STRINGS_PLACEHOLDER = re.compile(r"%(?:\d+\$)?[-+ 0#]*(?:\d+|\*)?(?:\.\d+)?(?:hh|h|ll|l|L|q|z|t|j)?[@dDiuUxXoOfeEgGcCsSpaAF%]|\$\{[^}]*\}")
+
+
+def read_strings(raw: bytes) -> tuple[str, str]:
+    """(the text of a .strings file, its encoding): UTF-16 when it has a byte order mark, UTF-8 otherwise."""
+    encoding = "utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8"
+    return raw.decode(encoding), encoding
+
+
+def l10n_overrides() -> dict[str, dict[str, str]]:
+    """The overrides in imagina/l10n by the file of Nextcloud they change: {path: {key: value}} (values as written in the
+    file, escapes included, with {{app_name}} replaced by the app's name)."""
+    overrides: dict[str, dict[str, str]] = {}
+    for file in sorted(L10N.glob("*.lproj/*.strings*")):
+        relative = str(file.relative_to(ROOT))
+        if file.name not in L10N_TABLES:
+            raise BrandingError(f"{relative}: Nextcloud's file for the table {file.name} is not known (L10N_TABLES)")
+        target = L10N_TABLES[file.name].format(lproj=file.parent.name)
+        entries: dict[str, str] = {}
+        if file.suffix == ".stringsdict":
+            for entry in STRINGSDICT_ENTRY.finditer(file.read_text(encoding="utf-8")):
+                if entry.group("key") in entries:
+                    raise BrandingError(f"{relative}: the key {entry.group('key')} is twice")
+                entries[entry.group("key")] = entry.group(0).replace("{{app_name}}", APP_NAME)
+            if not entries:
+                raise BrandingError(f"{relative}: no entry found")
+            overrides[target] = entries
+            continue
+        in_comment = False
+        for number, line in enumerate(file.read_text(encoding="utf-8").splitlines(), start=1):
+            stripped = line.strip()
+            if in_comment:
+                in_comment = "*/" not in stripped
+                continue
+            if not stripped or stripped.startswith("//"):
+                continue
+            if stripped.startswith("/*"):
+                in_comment = "*/" not in stripped
+                continue
+            entry = STRINGS_ENTRY.match(line)
+            if not entry or entry.group("tail").strip() != ";":
+                raise BrandingError(f"{relative}:{number}: expected one `\"key\" = \"value\";` per line")
+            if entry.group("key") in entries:
+                raise BrandingError(f"{relative}:{number}: the key {entry.group('key')} is twice")
+            entries[entry.group("key")] = entry.group("value").replace("{{app_name}}", APP_NAME)
+        overrides[target] = entries
+    return overrides
+
+
+def merge_overrides(text: str, overrides: dict[str, str], path: str) -> str:
+    """Nextcloud's strings file with the value of each overridden key replaced (every line of the key, if Nextcloud repeats
+    it) and everything else as it was. Stops when a key is not there any more or a translation loses or changes a specifier."""
+    found: set[str] = set()
+    lines = []
+    for line in text.split("\n"):
+        entry = STRINGS_ENTRY.match(line)
+        if entry and entry.group("key") in overrides:
+            key = entry.group("key")
+            if sorted(STRINGS_PLACEHOLDER.findall(entry.group("value"))) != sorted(STRINGS_PLACEHOLDER.findall(overrides[key])):
+                raise BrandingError(f"{path}: the override of {key} does not keep the specifiers of Nextcloud's text ({entry.group('value')!r})")
+            found.add(key)
+            line = f'{entry.group("head")}"{overrides[key]}"{entry.group("tail")}'
+        lines.append(line)
+    missing = sorted(set(overrides) - found)
+    if missing:
+        raise BrandingError(f"{path}: Nextcloud's file no longer has {', '.join(missing)} (imagina/l10n): review those overrides")
+    return "\n".join(lines)
+
+
+def merge_stringsdict_overrides(text: str, overrides: dict[str, str], path: str) -> str:
+    """The same for a .stringsdict: the whole entry (all its plural forms) of each overridden key is replaced."""
+    found: set[str] = set()
+
+    def replace_entry(entry: re.Match) -> str:
+        key = entry.group("key")
+        if key not in overrides:
+            return entry.group(0)
+        if set(STRINGS_PLACEHOLDER.findall(entry.group(0))) != set(STRINGS_PLACEHOLDER.findall(overrides[key])):
+            raise BrandingError(f"{path}: the override of {key} does not keep the specifiers of Nextcloud's entry")
+        found.add(key)
+        return overrides[key]
+
+    text = STRINGSDICT_ENTRY.sub(replace_entry, text)
+    missing = sorted(set(overrides) - found)
+    if missing:
+        raise BrandingError(f"{path}: Nextcloud's file no longer has {', '.join(missing)} (imagina/l10n): review those overrides")
+    return text
+
+
 def brand_texts() -> None:
-    """The texts that name the app (not the server) say APP_NAME instead of «Nextcloud», in every language."""
+    """The texts that name the app (not the server) say APP_NAME instead of «Nextcloud», in every language, and Imagina's
+    own wording (imagina/l10n: Spanish of Spain in «tú») replaces Nextcloud's where it is written."""
     keys = ("_access_photo_not_enabled_msg_",)
+    overrides = l10n_overrides()
     for strings in sorted((ROOT / "iOSClient/Supporting Files").glob("*.lproj/Localizable.strings")):
         path = str(strings.relative_to(ROOT))
-        raw = upstream(path)
-        encoding = "utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8"
-        text = raw.decode(encoding)
+        text, encoding = read_strings(upstream(path))
         lines = [
             line.replace("Nextcloud", APP_NAME) if line.lstrip().startswith(tuple(f'"{key}"' for key in keys)) else line
             for line in text.split("\n")
         ]
-        strings.write_bytes("\n".join(lines).encode(encoding))
+        text = "\n".join(lines)
+        if path in overrides:
+            text = merge_overrides(text, overrides.pop(path), path)
+        strings.write_bytes(text.encode(encoding))
+    # The other tables: the plural forms and the widgets' configuration screen.
+    for path, entries in sorted(overrides.items()):
+        text, encoding = read_strings(upstream(path))
+        merge = merge_stringsdict_overrides if path.endswith(".stringsdict") else merge_overrides
+        (ROOT / path).write_bytes(merge(text, entries, path).encode(encoding))
 
 
 def brand_permission_texts() -> None:
@@ -988,6 +1155,8 @@ def main() -> int:
         hook_account_removal()
         hook_app_delegate()
         hook_photos_prompt()
+        hook_tab_bar()
+        hook_settings_footer()
         brand_screens()
         brand_licences()
         brand_notifications()

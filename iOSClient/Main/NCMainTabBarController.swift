@@ -45,7 +45,7 @@ class NCMainTabBarController: UITabBarController {
 
         NCNetworking.shared.setupScene(sceneIdentifier: sceneIdentifier, controller: self)
 
-        tabBar.tintColor = NCBrandColor.shared.getElement(account: account)
+        tabBar.tintColor = ImaginaColor.accent // Imagina (IMAGINA.md): the adaptive accent
 
         configureMoreController()
         configureTabBarItems()
@@ -55,7 +55,7 @@ class NCMainTabBarController: UITabBarController {
             if let userInfo = notification.userInfo as? NSDictionary,
                let account = userInfo["account"] as? String,
                self?.account == account {
-                self?.tabBar.tintColor = NCBrandColor.shared.getElement(account: account)
+                self?.tabBar.tintColor = ImaginaColor.accent // Imagina (IMAGINA.md): the adaptive accent
             }
         }
 
