@@ -12,7 +12,7 @@ extension UINavigationController {
         return self.visibleViewController!.topMostViewController()
     }
 
-    func setNavigationBarAppearance(textColor: UIColor = NCBrandColor.shared.iconImageColor, backgroundColor: UIColor? = .systemBackground) {
+    func setNavigationBarAppearance(textColor: UIColor = NCBrandColor.shared.iconImageColor, backgroundColor: UIColor? = NCBrandColor.shared.customerBackground) {
         let appearance = UINavigationBarAppearance()
 
         if #available(iOS 26.0, *) {
@@ -27,7 +27,10 @@ extension UINavigationController {
             appearance.shadowColor = .clear
             appearance.shadowImage = UIImage()
         }
-        appearance.titleTextAttributes = [.foregroundColor: textColor]
+        // Imagina (IMAGINA.md): Instrument Sans in the title and the text buttons.
+        appearance.titleTextAttributes = [.foregroundColor: textColor, .font: NCBrandFont.font(size: 17, weight: .semibold)]
+        appearance.buttonAppearance.normal.titleTextAttributes = [.font: NCBrandFont.font(size: 17, weight: .regular)]
+        appearance.doneButtonAppearance.normal.titleTextAttributes = [.font: NCBrandFont.font(size: 17, weight: .semibold)]
 
         navigationBar.standardAppearance = appearance
         navigationBar.scrollEdgeAppearance = appearance

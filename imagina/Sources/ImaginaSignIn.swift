@@ -31,47 +31,70 @@ final class ImaginaSignIn: NSObject {
         self.onSignedIn = onSignedIn
     }
 
-    /// Puts the «Entrar con Imagina» button on Nextcloud's login screen in place of the server address.
-    /// The button keeps this object alive through its action.
+    /// Puts the wordmark and the «Entrar con Imagina» button on Nextcloud's login screen in place of its logo and the
+    /// server address. The screen is on the canvas (cream), where Nextcloud's login code paints the brand colour;
+    /// teal is only the button. The button keeps this object alive through its action.
     static func install(on screen: UIViewController, hiding views: [UIView?], onSignedIn: @escaping (Credentials) async -> Void) {
         let signIn = ImaginaSignIn(screen: screen, onSignedIn: onSignedIn)
         views.forEach { $0?.isHidden = true }
 
+        // The wordmark («imagina /cloud»), not the icon: this screen has room for it.
+        let wordmark = UIImageView(image: UIImage(named: "logo"))
+        wordmark.contentMode = .scaleAspectFit
+        wordmark.isAccessibilityElement = true
+        wordmark.accessibilityLabel = NCBrandOptions.shared.brand
+        wordmark.accessibilityTraits = .image
+
         var configuration = UIButton.Configuration.filled()
         configuration.title = ImaginaText.signIn
-        configuration.baseBackgroundColor = ImaginaColor.ivory
-        configuration.baseForegroundColor = ImaginaColor.ink
-        configuration.cornerStyle = .large
+        configuration.baseBackgroundColor = ImaginaColor.accent
+        configuration.baseForegroundColor = ImaginaColor.onAccent
+        configuration.cornerStyle = .fixed
+        configuration.background.cornerRadius = 12
         configuration.buttonSize = .large
         configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
             var outgoing = incoming
-            outgoing.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
+            outgoing.font = NCBrandFont.font(size: 17, weight: .semibold, relativeTo: .body)
             return outgoing
         }
 
         let button = UIButton(configuration: configuration, primaryAction: UIAction { _ in signIn.start(from: .signIn) })
         button.accessibilityIdentifier = "imaginaSignIn"
-        button.translatesAutoresizingMaskIntoConstraints = false
 
         let hint = UILabel()
         hint.text = ImaginaText.signInHint
-        hint.font = UIFont.preferredFont(forTextStyle: .footnote)
-        hint.textColor = ImaginaColor.ivory.withAlphaComponent(0.85)
+        hint.font = NCBrandFont.font(size: 13, weight: .regular, relativeTo: .footnote)
+        hint.adjustsFontForContentSizeCategory = true
+        hint.textColor = ImaginaColor.inkSecondary
         hint.textAlignment = .center
         hint.numberOfLines = 0
-        hint.translatesAutoresizingMaskIntoConstraints = false
 
-        screen.view.addSubview(button)
-        screen.view.addSubview(hint)
-        NSLayoutConstraint.activate([
-            button.centerXAnchor.constraint(equalTo: screen.view.centerXAnchor),
-            button.centerYAnchor.constraint(equalTo: screen.view.centerYAnchor, constant: 40),
-            button.widthAnchor.constraint(equalToConstant: 300),
+        let stack = UIStackView(arrangedSubviews: [wordmark, button, hint])
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.setCustomSpacing(56, after: wordmark)
+        stack.setCustomSpacing(12, after: button)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        screen.view.addSubview(stack)
+
+        let safeArea = screen.view.safeAreaLayoutGuide
+        let width = stack.widthAnchor.constraint(equalToConstant: 300)
+        width.priority = .defaultHigh
+        var constraints = [
+            stack.centerXAnchor.constraint(equalTo: safeArea.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: safeArea.centerYAnchor, constant: -24),
+            stack.leadingAnchor.constraint(greaterThanOrEqualTo: safeArea.leadingAnchor, constant: 32),
+            stack.trailingAnchor.constraint(lessThanOrEqualTo: safeArea.trailingAnchor, constant: -32),
+            width,
+            button.widthAnchor.constraint(equalTo: stack.widthAnchor),
             button.heightAnchor.constraint(greaterThanOrEqualToConstant: 50),
-            hint.topAnchor.constraint(equalTo: button.bottomAnchor, constant: 12),
-            hint.centerXAnchor.constraint(equalTo: button.centerXAnchor),
-            hint.widthAnchor.constraint(equalTo: button.widthAnchor)
-        ])
+            hint.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            wordmark.widthAnchor.constraint(lessThanOrEqualTo: stack.widthAnchor)
+        ]
+        if let size = wordmark.image?.size, size.width > 0 {
+            constraints.append(wordmark.heightAnchor.constraint(equalTo: wordmark.widthAnchor, multiplier: size.height / size.width))
+        }
+        NSLayoutConstraint.activate(constraints)
         signIn.button = button
     }
 

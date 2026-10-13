@@ -2,14 +2,46 @@
 
 import UIKit
 
-/// Colours of Imagina's brand book used by the screens Imagina adds.
+/// Colours of Imagina's brand book used by the screens Imagina adds, in the light and the dark theme. Screens are on the
+/// canvas (cream) with ink text; the accent (teal) is only for the primary action and highlights, never a background.
 enum ImaginaColor {
-    /// brand-ink: the tile of the icon and the text on ivory.
-    static let ink = UIColor(red: 0x1A / 255.0, green: 0x1B / 255.0, blue: 0x25 / 255.0, alpha: 1)
-    /// ivory: the only colour on teal, as the brand book asks.
-    static let ivory = UIColor(red: 0xF8 / 255.0, green: 0xF7 / 255.0, blue: 0xF4 / 255.0, alpha: 1)
-    /// accent: primary actions.
-    static let accent = UIColor(red: 0x0F / 255.0, green: 0x76 / 255.0, blue: 0x6E / 255.0, alpha: 1)
+    /// canvas: the background of a screen. The brand layer paints the launch and sign-in screens with the same
+    /// (`NCBrandColor.customerBackground`, from `IMAGINA_CANVAS` and `IMAGINA_CANVAS_DARK`).
+    static let canvas = NCBrandColor.shared.customerBackground
+    /// ink: the text on the canvas (`IMAGINA_INK`, `IMAGINA_INK_DARK`).
+    static let ink = NCBrandColor.shared.customerBackgroundText
+    /// ink-secondary: help text.
+    static let inkSecondary = dynamic(light: 0x474B57, dark: 0xC9CBD3)
+    /// accent: the primary action.
+    static let accent = dynamic(light: 0x0F766E, dark: 0x2DD4BF)
+    /// on-accent: the text on the accent.
+    static let onAccent = dynamic(light: 0xFFFFFF, dark: 0x0B2B28)
+
+    private static func dynamic(light: UInt32, dark: UInt32) -> UIColor {
+        UIColor { traits in
+            let value = traits.userInterfaceStyle == .dark ? dark : light
+            return UIColor(
+                red: CGFloat((value >> 16) & 0xFF) / 255.0,
+                green: CGFloat((value >> 8) & 0xFF) / 255.0,
+                blue: CGFloat(value & 0xFF) / 255.0,
+                alpha: 1
+            )
+        }
+    }
+}
+
+/// Instrument Sans, the brand's typeface (bundled in the app: `UIAppFonts` of iOSClient.plist), where Nextcloud's code
+/// gives no hook of its own. The navigation bars take it where Nextcloud builds their appearance and the sign-in
+/// screen from its own code; the font itself comes from `NCBrandFont`.
+@MainActor
+enum ImaginaTheme {
+    /// Called when the app starts (`AppDelegate`): the titles of the tab bar.
+    static func install() {
+        let attributes: [NSAttributedString.Key: Any] = [.font: NCBrandFont.font(size: 10, weight: .medium)]
+        for state in [UIControl.State.normal, .selected, .highlighted] {
+            UITabBarItem.appearance().setTitleTextAttributes(attributes, for: state)
+        }
+    }
 }
 
 /// Texts of the screens Imagina adds: Spanish (Spain), tuteo, and English for any other language.

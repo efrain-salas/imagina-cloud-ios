@@ -181,6 +181,11 @@ final class NCBrandColor: @unchecked Sendable {
     let customer: UIColor = UIColor(red: 15.0 / 255.0, green: 118.0 / 255.0, blue: 110.0 / 255.0, alpha: 1.0) // Imagina accent: #0F766E
     var customerText: UIColor = .white
 
+    // Imagina (IMAGINA.md): `customer` above is the accent (teal), only for highlights. Screens are on the canvas (cream) with
+    // ink text; both change with the dark theme.
+    let customerBackground: UIColor = UIColor { $0.userInterfaceStyle == .dark ? UIColor(red: 17.0 / 255.0, green: 18.0 / 255.0, blue: 25.0 / 255.0, alpha: 1.0) : UIColor(red: 248.0 / 255.0, green: 247.0 / 255.0, blue: 244.0 / 255.0, alpha: 1.0) }
+    let customerBackgroundText: UIColor = UIColor { $0.userInterfaceStyle == .dark ? UIColor(red: 243.0 / 255.0, green: 242.0 / 255.0, blue: 238.0 / 255.0, alpha: 1.0) : UIColor(red: 26.0 / 255.0, green: 27.0 / 255.0, blue: 37.0 / 255.0, alpha: 1.0) }
+
     // INTERNAL DEFINE COLORS
     private var themingColor = ThreadSafeDictionary<String, UIColor>()
     private var themingColorElement = ThreadSafeDictionary<String, UIColor>()
@@ -376,5 +381,28 @@ final class NCBrandColor: @unchecked Sendable {
             return color
         }
         return .white
+    }
+}
+
+// MARK: - Imagina (IMAGINA.md)
+
+/// Imagina's typeface, Instrument Sans (`UIAppFonts` of iOSClient.plist), for the places that take their font from the brand
+/// layer. Where the font is not bundled (the extensions) the system font takes its place.
+enum NCBrandFont {
+    static func font(size: CGFloat, weight: UIFont.Weight = .regular, relativeTo textStyle: UIFont.TextStyle? = nil) -> UIFont {
+        let name: String
+        switch weight {
+        case .bold, .heavy, .black:
+            name = "InstrumentSans-Bold"
+        case .semibold:
+            name = "InstrumentSans-SemiBold"
+        case .medium:
+            name = "InstrumentSans-Medium"
+        default:
+            name = "InstrumentSans-Regular"
+        }
+        let font = UIFont(name: name, size: size) ?? UIFont.systemFont(ofSize: size, weight: weight)
+        guard let textStyle else { return font }
+        return UIFontMetrics(forTextStyle: textStyle).scaledFont(for: font)
     }
 }

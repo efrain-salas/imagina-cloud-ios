@@ -32,6 +32,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     var pushSubscriptionTask: Task<Void, Never>?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Imagina (IMAGINA.md): Instrument Sans in the tab bar.
+        ImaginaTheme.install()
+
         if isUiTestingEnabled {
             Task {
                 await NCAccount().deleteAllAccounts()

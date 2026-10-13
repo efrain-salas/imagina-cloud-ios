@@ -10,7 +10,7 @@ class NCMoreNavigationController: NCMainNavigationController {
         super.navigationController(navigationController, willShow: viewController, animated: animated)
 
         guard viewController is NCCollectionViewCommon || viewController is NCActivity || viewController is NCTrash else {
-            setNavigationBarAppearance(backgroundColor: .systemGray6)
+            setNavigationBarAppearance(backgroundColor: NCBrandColor.shared.customerBackground)
             return
         }
     }

@@ -72,3 +72,10 @@ path = ["iOSClient/Utility/NYMnemonic/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2014 Nybex, Inc. <https://nybex.com>"
 SPDX-License-Identifier = "MIT"
+
+# Imagina Cloud (IMAGINA.md): the typeface of the brand, bundled in the app.
+[[annotations]]
+path = ["imagina/Sources/Fonts/*.ttf"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2022 The Instrument Sans Project Authors (https://github.com/Instrument/instrument-sans)"
+SPDX-License-Identifier = "OFL-1.1"

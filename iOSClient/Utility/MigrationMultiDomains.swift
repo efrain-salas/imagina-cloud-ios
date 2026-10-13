@@ -18,7 +18,7 @@ struct MigrationMultiDomains: View {
 
     var body: some View {
         ZStack {
-            Color(NCBrandColor.shared.customer)
+            Color(NCBrandColor.shared.customerBackground)
                 .ignoresSafeArea()
             VStack(spacing: 20) {
                 Spacer()
@@ -27,22 +27,22 @@ struct MigrationMultiDomains: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 80, height: 80)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(NCBrandColor.shared.customerBackgroundText))
 
                 Text(progressText)
                     .cappedFont(.body, maxDynamicType: .accessibility2)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(NCBrandColor.shared.customerBackgroundText))
 
                 ProgressView(value: progress)
-                    .progressViewStyle(LinearProgressViewStyle(tint: .white))
+                    .progressViewStyle(LinearProgressViewStyle(tint: Color(NCBrandColor.shared.customer)))
                     .frame(width: 240)
                     .padding(.bottom, 4)
 
                 Text(String(format: "%.0f%%", progress * 100))
                     .cappedFont(.body, maxDynamicType: .accessibility2)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(NCBrandColor.shared.customerBackgroundText))
 
                 Spacer()
             }

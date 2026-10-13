@@ -299,11 +299,11 @@ class NCLoginProviderWebViewFallback: UIViewController, WKNavigationDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = NCBrandColor.shared.customer
+        view.backgroundColor = NCBrandColor.shared.customerBackground
 
         // Navigation bar
         let closeButton = UIBarButtonItem(image: UIImage(systemName: "xmark"), style: .plain, target: self, action: #selector(closeTapped))
-        closeButton.tintColor = .white
+        closeButton.tintColor = NCBrandColor.shared.customerBackgroundText
         navigationItem.leftBarButtonItem = closeButton
 
         if let host = initialURL?.host {

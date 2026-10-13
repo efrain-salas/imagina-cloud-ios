@@ -55,10 +55,10 @@ class NCLogin: UIViewController, UITextFieldDelegate, NCLoginQRCodeDelegate {
         super.viewDidLoad()
 
         // Text color
-        if NCBrandColor.shared.customer.isTooLight() {
+        if NCBrandColor.shared.customerBackground.isTooLight() {
             textColor = .black
             textColorOpponent = .white
-        } else if NCBrandColor.shared.customer.isTooDark() {
+        } else if NCBrandColor.shared.customerBackground.isTooDark() {
             textColor = .white
             textColorOpponent = .black
         } else {
@@ -89,7 +89,7 @@ class NCLogin: UIViewController, UITextFieldDelegate, NCLoginQRCodeDelegate {
         loginAddressDetail.text = String.localizedStringWithFormat(NSLocalizedString("_login_address_detail_", comment: ""), NCBrandOptions.shared.brand)
 
         // QR code button
-        qrCode.tintColor = NCBrandColor.shared.customer.isTooLight() ? .black : .white
+        qrCode.tintColor = NCBrandColor.shared.customerBackground.isTooLight() ? .black : .white
 
         urlBase = NCBrandOptions.shared.loginBaseUrl
 
@@ -113,7 +113,7 @@ class NCLogin: UIViewController, UITextFieldDelegate, NCLoginQRCodeDelegate {
         navBarAppearance.titleTextAttributes = [.foregroundColor: textColor]
         navBarAppearance.largeTitleTextAttributes = [.foregroundColor: textColor]
         self.navigationController?.navigationBar.standardAppearance = navBarAppearance
-        self.navigationController?.view.backgroundColor = NCBrandColor.shared.customer
+        self.navigationController?.view.backgroundColor = NCBrandColor.shared.customerBackground
         self.navigationController?.navigationBar.tintColor = textColor
 
         if let dirGroupApps = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: NCBrandOptions.shared.capabilitiesGroupApps) {
@@ -140,7 +140,7 @@ class NCLogin: UIViewController, UITextFieldDelegate, NCLoginQRCodeDelegate {
         }
 
         self.navigationController?.navigationBar.setValue(true, forKey: "hidesShadow")
-        view.backgroundColor = NCBrandColor.shared.customer
+        view.backgroundColor = NCBrandColor.shared.customerBackground
 
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
@@ -177,9 +177,9 @@ class NCLogin: UIViewController, UITextFieldDelegate, NCLoginQRCodeDelegate {
 
         NCNetworking.shared.certificateDelegate = self
 
-        // Imagina (IMAGINA.md): «Entrar con Imagina» in place of the server address.
+        // Imagina (IMAGINA.md): the wordmark and «Entrar con Imagina» in place of the logo and the server address.
         if ImaginaSignIn.isEnabled {
-            ImaginaSignIn.install(on: self, hiding: [baseUrlTextField, loginButton, loginAddressDetail, qrCode, certificate, enforceServersButton, enforceServersDropdownImage]) { [weak self] credentials in
+            ImaginaSignIn.install(on: self, hiding: [imageBrand, baseUrlTextField, loginButton, loginAddressDetail, qrCode, certificate, enforceServersButton, enforceServersDropdownImage]) { [weak self] credentials in
                 await self?.createAccount(urlBase: credentials.server, user: credentials.user, password: credentials.appPassword)
             }
         }

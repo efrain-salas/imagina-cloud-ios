@@ -13,9 +13,9 @@ class DocumentActionViewController: FPUIActionExtensionViewController {
     override func loadView() {
         super.loadView()
 
-        view.backgroundColor = NCBrandColor.shared.customer
-        titleError.textColor = NCBrandColor.shared.customerText
-        cancelButton.setTitleColor(NCBrandColor.shared.customerText, for: .normal)
+        view.backgroundColor = NCBrandColor.shared.customerBackground
+        titleError.textColor = NCBrandColor.shared.customerBackgroundText
+        cancelButton.setTitleColor(NCBrandColor.shared.customerBackgroundText, for: .normal)
 
         titleError.text = ""
     }

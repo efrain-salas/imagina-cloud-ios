@@ -77,8 +77,66 @@ def swift_string(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
+def rgb(value: str) -> tuple[int, int, int]:
+    """(red, green, blue) from `#RRGGBB`."""
+    digits = value.lstrip("#")
+    if len(digits) != 6:
+        raise BrandingError(f"{value!r} is not a colour as #RRGGBB")
+    return int(digits[0:2], 16), int(digits[2:4], 16), int(digits[4:6], 16)
+
+
+def ui_color(value: str) -> str:
+    red, green, blue = rgb(value)
+    return f"UIColor(red: {red}.0 / 255.0, green: {green}.0 / 255.0, blue: {blue}.0 / 255.0, alpha: 1.0)"
+
+
+def dynamic_ui_color(light: str, dark: str) -> str:
+    """A UIColor that is `light` in the light theme and `dark` in the dark one."""
+    return f"UIColor {{ $0.userInterfaceStyle == .dark ? {ui_color(dark)} : {ui_color(light)} }}"
+
+
 def write(path: str, text: str) -> None:
     (ROOT / path).write_text(text, encoding="utf-8")
+
+
+# Appended to Brand/NCBrand.swift, which every target of the project compiles: the font is looked up by name and the
+# system font takes its place where it is not bundled (only the app bundles Instrument Sans).
+NC_BRAND_FONT = """
+// MARK: - Imagina (IMAGINA.md)
+
+/// Imagina's typeface, Instrument Sans (`UIAppFonts` of iOSClient.plist), for the places that take their font from the brand
+/// layer. Where the font is not bundled (the extensions) the system font takes its place.
+enum NCBrandFont {
+    static func font(size: CGFloat, weight: UIFont.Weight = .regular, relativeTo textStyle: UIFont.TextStyle? = nil) -> UIFont {
+        let name: String
+        switch weight {
+        case .bold, .heavy, .black:
+            name = "InstrumentSans-Bold"
+        case .semibold:
+            name = "InstrumentSans-SemiBold"
+        case .medium:
+            name = "InstrumentSans-Medium"
+        default:
+            name = "InstrumentSans-Regular"
+        }
+        let font = UIFont(name: name, size: size) ?? UIFont.systemFont(ofSize: size, weight: weight)
+        guard let textStyle else { return font }
+        return UIFontMetrics(forTextStyle: textStyle).scaledFont(for: font)
+    }
+}
+"""
+
+# The wordmark («imagina /cloud») is 240 pt wide in the app, whatever the SVG of the brand kit says: it only has a viewBox.
+WORDMARK_WIDTH = 240.0
+
+
+def wordmark_size() -> tuple[float, float]:
+    """(width, height) in points of the wordmark in the asset catalog: 240 wide, the height of the brand kit's proportion."""
+    source = (IMAGINA / "brand" / "imagina-cloud-wordmark.svg").read_text(encoding="utf-8")
+    match = re.search(r'viewBox="0 0 ([0-9.]+) ([0-9.]+)"', source)
+    if not match:
+        raise BrandingError("imagina/brand/imagina-cloud-wordmark.svg has no viewBox")
+    return WORDMARK_WIDTH, round(WORDMARK_WIDTH * float(match.group(2)) / float(match.group(1)), 2)
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -154,6 +212,13 @@ def brand_entitlements_and_plists() -> None:
     text = replace(text, "<key>CFBundleDisplayName</key>\n\t<string>Nextcloud</string>", f"<key>CFBundleDisplayName</key>\n\t<string>{APP_NAME}</string>", path)
     text = replace(text, "<key>CFBundleURLName</key>\n\t\t\t<string>it.twsweb.Nextcloud</string>", f"<key>CFBundleURLName</key>\n\t\t\t<string>{APP_ID}</string>", path)
     text = replace(text, "<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>nextcloud</string>", f"<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>{SCHEME}</string>", path)
+    # Instrument Sans (imagina/Sources/Fonts, bundled by the synchronized folder). Fonts of the app go in at the root of the bundle.
+    fonts = "".join(f"\t\t<string>{font.name}</string>\n" for font in sorted((IMAGINA / "Sources" / "Fonts").glob("*.ttf")))
+    if not fonts:
+        raise BrandingError("imagina/Sources/Fonts has no font (imagina/brand/name-fonts.py writes them)")
+    text = replace(text, "\t<key>UIApplicationSceneManifest</key>\n", f"\t<key>UIAppFonts</key>\n\t<array>\n{fonts}\t</array>\n\t<key>UIApplicationSceneManifest</key>\n", path)
+    # The launch screen is on the canvas (light or dark): the status bar follows the theme instead of staying light.
+    text = replace(text, "<key>UIStatusBarStyle</key>\n\t<string>UIStatusBarStyleLightContent</string>", "<key>UIStatusBarStyle</key>\n\t<string>UIStatusBarStyleDefault</string>", path)
     write(path, text)
 
     # Names in the Files app and the share sheet.
@@ -219,13 +284,26 @@ def brand_options() -> None:
     for pattern, value in options.items():
         text = set_line(text, pattern, value, path)
 
-    red, green, blue = (int(P["IMAGINA_ACCENT"].lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
     text = set_line(
         text,
         r"let customer: UIColor",
-        f"UIColor(red: {red}.0 / 255.0, green: {green}.0 / 255.0, blue: {blue}.0 / 255.0, alpha: 1.0) // Imagina accent: {P['IMAGINA_ACCENT']}",
+        f"{ui_color(P['IMAGINA_ACCENT'])} // Imagina accent: {P['IMAGINA_ACCENT']}",
         path,
     )
+    # `customer` is the accent and only that: the screens the brand paints (launch, sign-in, the Files app's error, the
+    # maintenance screens) are on the canvas with ink text, and so are the main screens (see brand_screens).
+    text = replace(
+        text,
+        "    var customerText: UIColor = .white\n",
+        "    var customerText: UIColor = .white\n"
+        "\n"
+        "    // Imagina (IMAGINA.md): `customer` above is the accent (teal), only for highlights. Screens are on the canvas (cream) with\n"
+        "    // ink text; both change with the dark theme.\n"
+        f"    let customerBackground: UIColor = {dynamic_ui_color(P['IMAGINA_CANVAS'], P['IMAGINA_CANVAS_DARK'])}\n"
+        f"    let customerBackgroundText: UIColor = {dynamic_ui_color(P['IMAGINA_INK'], P['IMAGINA_INK_DARK'])}\n",
+        path,
+    )
+    text += NC_BRAND_FONT
     write(path, text)
 
     # The app's own links (widgets, deep links) use Imagina's scheme, so they never open the official app.
@@ -235,13 +313,36 @@ def brand_options() -> None:
     text = replace(text, '"nextcloud://open-action?', f'"{SCHEME}://open-action?', path, count=5)
     write(path, text)
 
-    # Launch screen on Imagina's accent.
+    # Launch screen on the canvas (the named colour ImaginaCanvas, light and dark in Custom.xcassets) with the wordmark.
     path = "Brand/LaunchScreen.storyboard"
     text = upstream(path).decode()
+    canvas_red, canvas_green, canvas_blue = rgb(P["IMAGINA_CANVAS"])
     text = replace(
         text,
-        'red="0.0" green="0.50980392156862742" blue="0.78823529411764703"',
-        f'red="{red / 255:.17g}" green="{green / 255:.17g}" blue="{blue / 255:.17g}"',
+        '<color key="backgroundColor" red="0.0" green="0.50980392156862742" blue="0.78823529411764703" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>',
+        '<color key="backgroundColor" name="ImaginaCanvas"/>',
+        path,
+    )
+    text = replace(
+        text,
+        '        <capability name="Safe area layout guides" minToolsVersion="9.0"/>\n',
+        '        <capability name="Named colors" minToolsVersion="9.0"/>\n        <capability name="Safe area layout guides" minToolsVersion="9.0"/>\n',
+        path,
+    )
+    width, height = wordmark_size()
+    text = replace(
+        text,
+        '<rect key="frame" x="59.5" y="269.5" width="256" height="128"/>',
+        f'<rect key="frame" x="{(375 - width) / 2:g}" y="{(667 - height) / 2:g}" width="{width:g}" height="{height:g}"/>',
+        path,
+    )
+    text = replace(
+        text,
+        '        <image name="logo" width="256" height="128"/>\n',
+        f'        <image name="logo" width="{width:g}" height="{height:g}"/>\n'
+        '        <namedColor name="ImaginaCanvas">\n'
+        f'            <color red="{canvas_red / 255:.17g}" green="{canvas_green / 255:.17g}" blue="{canvas_blue / 255:.17g}" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>\n'
+        '        </namedColor>\n',
         path,
     )
     write(path, text)
@@ -253,13 +354,15 @@ def brand_options() -> None:
 def hook_login() -> None:
     path = "iOSClient/Login/NCLogin.swift"
     text = upstream(path).decode()
+    # The screen is on the canvas (cream), not on the brand colour: its texts and tints follow from the canvas.
+    text = replace(text, "NCBrandColor.shared.customer", "NCBrandColor.shared.customerBackground", path, count=5)
     anchor = "        NCNetworking.shared.certificateDelegate = self\n    }\n"
     hook = (
         "        NCNetworking.shared.certificateDelegate = self\n"
         "\n"
-        "        // Imagina (IMAGINA.md): «Entrar con Imagina» in place of the server address.\n"
+        "        // Imagina (IMAGINA.md): the wordmark and «Entrar con Imagina» in place of the logo and the server address.\n"
         "        if ImaginaSignIn.isEnabled {\n"
-        "            ImaginaSignIn.install(on: self, hiding: [baseUrlTextField, loginButton, loginAddressDetail, qrCode, certificate, enforceServersButton, enforceServersDropdownImage]) { [weak self] credentials in\n"
+        "            ImaginaSignIn.install(on: self, hiding: [imageBrand, baseUrlTextField, loginButton, loginAddressDetail, qrCode, certificate, enforceServersButton, enforceServersDropdownImage]) { [weak self] credentials in\n"
         "                await self?.createAccount(urlBase: credentials.server, user: credentials.user, password: credentials.appPassword)\n"
         "            }\n"
         "        }\n"
@@ -318,12 +421,24 @@ def hook_account_removal() -> None:
     write(path, text)
 
 
-def hook_push_notifications() -> None:
+def hook_app_delegate() -> None:
     """The notices of new mail (imagina/Sources/ImaginaPush.swift and ImaginaMailNotice.swift, C12.6): the app's APNs token
     also goes to Imagina's devices API, and a tap on Imagina's notice opens the message in Mail before Nextcloud looks at
-    the response. Nextcloud's own notifications are not touched."""
+    the response. Nextcloud's own notifications are not touched. And the typeface of the tab bar (ImaginaTheme), set when
+    the app starts."""
     path = "iOSClient/AppDelegate.swift"
     text = upstream(path).decode()
+
+    anchor = "    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {\n"
+    text = replace(
+        text,
+        anchor,
+        anchor
+        + "        // Imagina (IMAGINA.md): Instrument Sans in the tab bar.\n"
+        + "        ImaginaTheme.install()\n"
+        + "\n",
+        path,
+    )
 
     anchor = "    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {\n"
     text = replace(
@@ -382,6 +497,116 @@ def write_parameters() -> None:
     (IMAGINA / "Sources" / "ImaginaParameters.swift").write_text("\n".join(lines), encoding="utf-8")
 
 
+def brand_screens() -> None:
+    """Screens on the canvas (cream, with ink text) where Nextcloud paints the brand colour as a background, and the main
+    screens (files, media, Menu) and bars on the canvas instead of the system's white. Teal stays as the accent: the tints,
+    the buttons, the switches and the selection come from the theme of the server (`color-element`, teal) as before.
+    Settings, the sheets and the viewers keep the system's backgrounds (see IMAGINA.md)."""
+    background = "NCBrandColor.shared.customerBackground"
+    ink = "NCBrandColor.shared.customerBackgroundText"
+
+    # The web fallback of the login (Imagina never reaches it: its sign-in is Imagina's own).
+    path = "iOSClient/Login/NCLoginProvider.swift"
+    text = upstream(path).decode()
+    text = replace(text, "        view.backgroundColor = NCBrandColor.shared.customer\n", f"        view.backgroundColor = {background}\n", path)
+    text = replace(text, "        closeButton.tintColor = .white\n", f"        closeButton.tintColor = {ink}\n", path)
+    write(path, text)
+
+    # The error screen of the Files app's extension.
+    path = "File Provider Extension UI/DocumentActionViewController.swift"
+    text = upstream(path).decode()
+    text = replace(text, "        view.backgroundColor = NCBrandColor.shared.customer\n", f"        view.backgroundColor = {background}\n", path)
+    text = replace(text, "        titleError.textColor = NCBrandColor.shared.customerText\n", f"        titleError.textColor = {ink}\n", path)
+    text = replace(text, "cancelButton.setTitleColor(NCBrandColor.shared.customerText, for: .normal)", f"cancelButton.setTitleColor({ink}, for: .normal)", path)
+    write(path, text)
+
+    # The screens shown while the database is compacted at a new version (also the first launch) and migrated.
+    path = "iOSClient/Utility/Maintenance.swift"
+    text = upstream(path).decode()
+    text = replace(text, "Color(NCBrandColor.shared.customer)", f"Color({background})", path)
+    text = replace(text, ".foregroundColor(.white)", f".foregroundColor(Color({ink}))", path, count=2)
+    text = replace(text, "CircularProgressViewStyle(tint: .white)", "CircularProgressViewStyle(tint: Color(NCBrandColor.shared.customer))", path)
+    write(path, text)
+
+    path = "iOSClient/Utility/MigrationMultiDomains.swift"
+    text = upstream(path).decode()
+    text = replace(text, "Color(NCBrandColor.shared.customer)", f"Color({background})", path)
+    text = replace(text, ".foregroundColor(.white)", f".foregroundColor(Color({ink}))", path, count=3)
+    text = replace(text, "LinearProgressViewStyle(tint: .white)", "LinearProgressViewStyle(tint: Color(NCBrandColor.shared.customer))", path)
+    write(path, text)
+
+    # Navigation bars: the canvas (before iOS 26, which draws its own) and Instrument Sans in the title and the text buttons.
+    path = "iOSClient/Extensions/UINavigationController+Extension.swift"
+    text = upstream(path).decode()
+    text = replace(text, "backgroundColor: UIColor? = .systemBackground) {", f"backgroundColor: UIColor? = {background}) {{", path)
+    text = replace(
+        text,
+        "        appearance.titleTextAttributes = [.foregroundColor: textColor]\n",
+        "        // Imagina (IMAGINA.md): Instrument Sans in the title and the text buttons.\n"
+        "        appearance.titleTextAttributes = [.foregroundColor: textColor, .font: NCBrandFont.font(size: 17, weight: .semibold)]\n"
+        "        appearance.buttonAppearance.normal.titleTextAttributes = [.font: NCBrandFont.font(size: 17, weight: .regular)]\n"
+        "        appearance.doneButtonAppearance.normal.titleTextAttributes = [.font: NCBrandFont.font(size: 17, weight: .semibold)]\n",
+        path,
+    )
+    write(path, text)
+
+    path = "iOSClient/More/NCMoreNavigationController.swift"
+    text = upstream(path).decode()
+    text = replace(text, "setNavigationBarAppearance(backgroundColor: .systemGray6)", f"setNavigationBarAppearance(backgroundColor: {background})", path)
+    write(path, text)
+
+    # Files, Favorites, Offline, Shares and the rest of the lists that share NCCollectionViewCommon.
+    path = "iOSClient/Main/Collection Common/NCCollectionViewCommon.swift"
+    text = upstream(path).decode()
+    text = replace(
+        text,
+        "        view.backgroundColor = .systemBackground\n        collectionView.backgroundColor = .systemBackground\n",
+        f"        view.backgroundColor = {background}\n        collectionView.backgroundColor = {background}\n",
+        path,
+    )
+    write(path, text)
+
+    path = "iOSClient/Media/NCMedia.swift"
+    text = upstream(path).decode()
+    text = replace(text, "        view.backgroundColor = .systemBackground\n", f"        view.backgroundColor = {background}\n", path)
+    text = replace(text, "        collectionView.backgroundColor = .systemBackground\n", f"        collectionView.backgroundColor = {background}\n", path)
+    write(path, text)
+
+    # The Menu tab: the canvas behind its white cards.
+    path = "iOSClient/More/NCMoreView.swift"
+    text = upstream(path).decode()
+    text = replace(text, "Color(.systemGroupedBackground)", f"Color({background})", path, count=3)
+    write(path, text)
+
+    # The foot of Settings, where the app says what it is: the wordmark above the notice.
+    path = "iOSClient/Settings/Settings/NCSettingsView.swift"
+    text = upstream(path).decode()
+    text = replace(
+        text,
+        "                Text(model.footerApp + model.footerServer + model.footerSlogan)\n                    .font(.footnote)\n",
+        "                // Imagina (IMAGINA.md): the wordmark above the notice of the app.\n"
+        "                ImaginaAboutFooter(text: model.footerApp + model.footerServer + model.footerSlogan)\n",
+        path,
+    )
+    write(path, text)
+
+
+def brand_licences() -> None:
+    """Instrument Sans is under the SIL Open Font License (LICENSES/OFL-1.1.txt): REUSE needs to know."""
+    path = "REUSE.toml"
+    text = upstream(path).decode()
+    text = text.rstrip("\n") + (
+        "\n\n"
+        "# Imagina Cloud (IMAGINA.md): the typeface of the brand, bundled in the app.\n"
+        "[[annotations]]\n"
+        'path = ["imagina/Sources/Fonts/*.ttf"]\n'
+        'precedence = "aggregate"\n'
+        'SPDX-FileCopyrightText = "2022 The Instrument Sans Project Authors (https://github.com/Instrument/instrument-sans)"\n'
+        'SPDX-License-Identifier = "OFL-1.1"\n'
+    )
+    write(path, text)
+
+
 # ---------------------------------------------------------------------------------------------------
 # Images and texts
 
@@ -393,7 +618,57 @@ def brand_images() -> None:
     shutil.copytree(brand / "AppIcon.icon", icon)
 
     shutil.copyfile(brand / "AppIcon-1024.png", ROOT / "Brand/Custom.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png")
-    shutil.copyfile(brand / "imagina-cloud-mark.svg", ROOT / "Brand/Custom.xcassets/logo.imageset/logo.svg")
+
+    # `logo` is the wordmark («imagina /cloud»), which Nextcloud's screens (launch, sign-in, the Files app's error) and
+    # Imagina's (Settings) show where Nextcloud had its logo: dark-ink on the canvas, ivory on the dark canvas. The SVGs of the
+    # brand kit only have a viewBox: the copies in the catalog also say their size, so the image is 240 pt wide.
+    width, height = wordmark_size()
+    logo = ROOT / "Brand/Custom.xcassets/logo.imageset"
+    for source, filename in (("imagina-cloud-wordmark.svg", "logo.svg"), ("imagina-cloud-wordmark-reverse.svg", "logo-dark.svg")):
+        svg = (brand / source).read_text(encoding="utf-8")
+        svg = replace(svg, '<svg xmlns="http://www.w3.org/2000/svg" ', f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:g}" height="{height:g}" ', source)
+        (logo / filename).write_text(svg, encoding="utf-8")
+    (logo / "Contents.json").write_text(
+        json.dumps(
+            {
+                "images": [
+                    {"filename": "logo.svg", "idiom": "universal"},
+                    {"appearances": [{"appearance": "luminosity", "value": "dark"}], "filename": "logo-dark.svg", "idiom": "universal"},
+                ],
+                "info": {"author": "xcode", "version": 1},
+                "properties": {"preserves-vector-representation": True},
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    # The canvas for the launch screen (a storyboard takes its colours from the catalog), light and dark.
+    def components(value: str) -> dict:
+        red, green, blue = rgb(value)
+        return {"alpha": "1.000", "blue": f"0x{blue:02X}", "green": f"0x{green:02X}", "red": f"0x{red:02X}"}
+
+    canvas = ROOT / "Brand/Custom.xcassets/ImaginaCanvas.colorset"
+    canvas.mkdir(exist_ok=True)
+    (canvas / "Contents.json").write_text(
+        json.dumps(
+            {
+                "colors": [
+                    {"color": {"color-space": "srgb", "components": components(P["IMAGINA_CANVAS"])}, "idiom": "universal"},
+                    {
+                        "appearances": [{"appearance": "luminosity", "value": "dark"}],
+                        "color": {"color-space": "srgb", "components": components(P["IMAGINA_CANVAS_DARK"])},
+                        "idiom": "universal",
+                    },
+                ],
+                "info": {"author": "xcode", "version": 1},
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def brand_texts() -> None:
@@ -419,7 +694,9 @@ def main() -> int:
         hook_login()
         hook_menu()
         hook_account_removal()
-        hook_push_notifications()
+        hook_app_delegate()
+        brand_screens()
+        brand_licences()
         brand_notifications()
         write_parameters()
         brand_images()

@@ -301,8 +301,8 @@ struct NCSettingsView: View {
             // `Watermark` Section
             Section(content: {
             }, footer: {
-                Text(model.footerApp + model.footerServer + model.footerSlogan)
-                    .font(.footnote)
+                // Imagina (IMAGINA.md): the wordmark above the notice of the app.
+                ImaginaAboutFooter(text: model.footerApp + model.footerServer + model.footerSlogan)
             })
         }
         .sheet(isPresented: $showPasscode) {

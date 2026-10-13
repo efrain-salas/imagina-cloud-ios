@@ -13,7 +13,7 @@ struct Maintenance: View {
 
     var body: some View {
         ZStack {
-            Color(NCBrandColor.shared.customer)
+            Color(NCBrandColor.shared.customerBackground)
                 .ignoresSafeArea()
             VStack(spacing: 20) {
                 Spacer()
@@ -22,16 +22,16 @@ struct Maintenance: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 80, height: 80)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(NCBrandColor.shared.customerBackgroundText))
 
                 Text("_opt_in_pro_")
                     .cappedFont(.body, maxDynamicType: .accessibility2)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(NCBrandColor.shared.customerBackgroundText))
 
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .progressViewStyle(CircularProgressViewStyle(tint: Color(NCBrandColor.shared.customer)))
                     .scaleEffect(1.5)
                     .padding(.top, 16)
 
