@@ -344,6 +344,9 @@ def brand_entitlements_and_plists() -> None:
     path = "Brand/iOSClient.plist"
     text = upstream(path).decode()
     text = replace(text, "<key>CFBundleDisplayName</key>\n\t<string>Nextcloud</string>", f"<key>CFBundleDisplayName</key>\n\t<string>{APP_NAME}</string>", path)
+    # The bundle's short name is the target's («Nextcloud») unless it is set: the app's own name, as Xcode's Organizer and
+    # the system show it where the display name does not apply. The executable keeps Nextcloud's name.
+    text = replace(text, "<key>CFBundleName</key>\n\t<string>$(PRODUCT_NAME)</string>", f"<key>CFBundleName</key>\n\t<string>{escape(APP_NAME)}</string>", path)
     text = replace(text, "<key>CFBundleURLName</key>\n\t\t\t<string>it.twsweb.Nextcloud</string>", f"<key>CFBundleURLName</key>\n\t\t\t<string>{APP_ID}</string>", path)
     text = replace(text, "<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>nextcloud</string>", f"<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>{SCHEME}</string>", path)
     # Instrument Sans and Fraunces (imagina/Sources/Fonts, bundled by the synchronized folder). Fonts of the app go in at the root of the bundle.
