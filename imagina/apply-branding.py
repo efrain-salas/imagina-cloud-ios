@@ -357,14 +357,18 @@ def brand_entitlements_and_plists() -> None:
     # The launch screen is on the canvas (light or dark): the status bar follows the theme instead of staying light.
     text = replace(text, "<key>UIStatusBarStyle</key>\n\t<string>UIStatusBarStyleLightContent</string>", "<key>UIStatusBarStyle</key>\n\t<string>UIStatusBarStyleDefault</string>", path)
     # Export compliance: the code in Nextcloud's file was issued to Nextcloud for its documents, not to Imagina. The app does
-    # use encryption beyond the system's (OpenSSL for end-to-end encryption), so ITSAppUsesNonExemptEncryption stays true; the
-    # code is Imagina's own (IMAGINA_ENCRYPTION_COMPLIANCE_CODE, which App Store Connect gives once Imagina's export
-    # documents are uploaded) or none, and then App Store Connect asks the export questions for each build.
+    # use encryption beyond the system's (OpenSSL for end-to-end encryption). With Imagina's own code
+    # (IMAGINA_ENCRYPTION_COMPLIANCE_CODE, which App Store Connect gives once Imagina's export documents are uploaded) the
+    # app declares ITSAppUsesNonExemptEncryption with it. Without one it declares nothing: App Store Connect refuses an
+    # upload that says true with no code («Invalid Export Compliance Code», 14 Oct 2026), and when the key is absent it
+    # asks the export questions for each build instead.
     nextcloud_code = "\t<key>ITSEncryptionExportComplianceCode</key>\n\t<string>8e9f9874-938e-460b-a9be-f82cb3393971</string>\n"
     own_code = P.get("IMAGINA_ENCRYPTION_COMPLIANCE_CODE", "")
     if own_code and not re.fullmatch(r"[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", own_code):
         raise BrandingError("IMAGINA_ENCRYPTION_COMPLIANCE_CODE must be a UUID, as App Store Connect gives it")
     text = replace(text, nextcloud_code, f"\t<key>ITSEncryptionExportComplianceCode</key>\n\t<string>{own_code}</string>\n" if own_code else "", path)
+    if not own_code:
+        text = replace(text, "\t<key>ITSAppUsesNonExemptEncryption</key>\n\t<true/>\n", "", path)
     # The app and its extensions say «© Imagina», not Nextcloud (the generated Info.plists get it from the project's build settings).
     text = replace(text, "\t<key>NSAppTransportSecurity</key>\n", copyright_entry() + "\t<key>NSAppTransportSecurity</key>\n", path)
     # The usage descriptions of the permission prompts, in English as the fallback of every language without its own
