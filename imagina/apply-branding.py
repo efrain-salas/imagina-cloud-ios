@@ -356,6 +356,10 @@ def brand_entitlements_and_plists() -> None:
     text = replace(text, "\t<key>UIApplicationSceneManifest</key>\n", f"\t<key>UIAppFonts</key>\n\t<array>\n{fonts}\t</array>\n\t<key>UIApplicationSceneManifest</key>\n", path)
     # The launch screen is on the canvas (light or dark): the status bar follows the theme instead of staying light.
     text = replace(text, "<key>UIStatusBarStyle</key>\n\t<string>UIStatusBarStyleLightContent</string>", "<key>UIStatusBarStyle</key>\n\t<string>UIStatusBarStyleDefault</string>", path)
+    # No «location» background mode: the automatic photo upload wakes on significant location changes, which iOS delivers
+    # (relaunching the app if needed) without it, and App Review refuses the mode without persistent location (guideline
+    # 2.5.4, 15 Oct 2026). hook_background_location drops the setting that needs the mode.
+    text = replace(text, "\t\t<string>remote-notification</string>\n\t\t<string>location</string>\n", "\t\t<string>remote-notification</string>\n", path)
     # Export compliance: the code in Nextcloud's file was issued to Nextcloud for its documents, not to Imagina. The app does
     # use encryption beyond the system's (OpenSSL for end-to-end encryption). With Imagina's own code
     # (IMAGINA_ENCRYPTION_COMPLIANCE_CODE, which App Store Connect gives once Imagina's export documents are uploaded) the
@@ -721,6 +725,23 @@ def hook_photos_prompt() -> None:
         + "            return true\n"
         + "        }\n"
         + "\n",
+        path,
+    )
+    write(path, text)
+
+
+def hook_background_location() -> None:
+    """The automatic photo upload by location keeps working without the «location» background mode, which the app no longer
+    declares (see brand_entitlements_and_plists): it only monitors significant location changes, which iOS delivers in the
+    background without that mode. `allowsBackgroundLocationUpdates = true` needs the mode (iOS stops the app when it is set
+    without it), so it goes."""
+    path = "iOSClient/NCBackgroundLocationUploadManager.swift"
+    text = upstream(path).decode()
+    text = replace(
+        text,
+        "        locationManager.allowsBackgroundLocationUpdates = true\n",
+        "        // Imagina (IMAGINA.md): no allowsBackgroundLocationUpdates, which needs the «location» background mode the app does\n"
+        + "        // not declare. Significant location changes reach the app in the background without it.\n",
         path,
     )
     write(path, text)
@@ -1162,6 +1183,7 @@ def main() -> int:
         hook_account_removal()
         hook_app_delegate()
         hook_photos_prompt()
+        hook_background_location()
         hook_tab_bar()
         hook_settings_footer()
         brand_screens()

@@ -20,7 +20,8 @@ class NCBackgroundLocationUploadManager: NSObject, CLLocationManagerDelegate {
 
         locationManager.delegate = self
         locationManager.activityType = .fitness
-        locationManager.allowsBackgroundLocationUpdates = true
+        // Imagina (IMAGINA.md): no allowsBackgroundLocationUpdates, which needs the «location» background mode the app does
+        // not declare. Significant location changes reach the app in the background without it.
     }
 
     func start() {
